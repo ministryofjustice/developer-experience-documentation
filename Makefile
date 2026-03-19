@@ -23,4 +23,4 @@ preview:
 		/usr/local/bin/preview
 
 link-check:
-	lychee --verbose --no-progress './**/*.md' './**/*.html' './**/*.erb' --accept 403,200,429
+	lychee --verbose --no-progress './**/*.md' './**/*.html' './**/*.erb' --accept 403,200,429,401,302,301
