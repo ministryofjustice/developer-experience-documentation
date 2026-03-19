@@ -1,12 +1,12 @@
 ---
-owner_slack: "#nvvs-devops"
+owner_slack: "#developer-experience-team"
 title: Creating Github PAT Token
-last_reviewed_on: 2025-05-07
+last_reviewed_on: 2026-03-19
 review_in: 6 months
 ---
 # Creating a GitHub Personal Access Token (PAT)
 
-This runbook outlines the steps required to generate and securely use a GitHub Personal Access Token (PAT) for use with CI/CD systems or local development as per [ADR 011 - Use GitHub Actions for CI/CD](../documentation/adrs/011-use-github-actions-for-ci-cd.html).
+This runbook outlines the steps required to generate and securely use a GitHub Personal Access Token (PAT) for use with CI/CD systems or local development.
 
 ## Purpose
 
@@ -35,7 +35,7 @@ GitHub PATs are used for authenticating against GitHub APIs or repositories in c
 1. Navigate to [https://github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **"Fine-grained tokens"** (recommended)
 3. Click **"Generate new token"**
-4. Provide a **name** for the token (e.g., `ci-pat-nvvs`)
+4. Provide a **name** for the token (e.g., `ci-pat-gh-audit`)
 5. Set an **expiration** (default: 30 days, recommended: 90 days or less for CI)
 6. Select **Repositories**:
 
