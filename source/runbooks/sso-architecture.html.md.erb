@@ -1,0 +1,219 @@
+---
+owner_slack: "#developer-experience-team"
+title: SSO Architecture Runbook
+last_reviewed_on: 2026-03-19
+review_in: 6 months
+---
+
+# 🔐 SSO Architecture Runbook
+
+## 📌 Purpose
+
+This runbook documents the **current Single Sign-On (SSO) architecture** used across Operations Engineering services. It provides a clear reference for authentication flows, control planes, and trust relationships.
+
+## 🌍 Auth0 Tenant
+
+**Region:** EU
+**Tenant:** Operations Engineering
+
+👉 [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
+
+Auth0 acts as the **central SSO broker** across all integrated services.
+
+## 🧭 Architecture Overview
+
+![GitHub SSO architecture](/images/github_SSO.png)
+
+### 🔗 Service Providers (SP)
+
+The following services initiate authentication:
+
+* Docker
+* PagerDuty
+* GitHub
+
+Users access these services directly, which then delegate authentication to Auth0.
+
+### 🔐 Auth0 (Central Broker)
+
+Auth0 manages authentication and routes users to appropriate identity providers.
+
+#### Applications
+
+* `DockerSSO`
+* `PagerDuty`
+* `GitHub`
+
+#### Connections
+
+* GitHub (Social)
+* Google Workspace (Enterprise)
+* Azure AD / Entra ID (Enterprise)
+
+## 🔄 GitHub SSO Flow (Enterprise)
+
+**Entry point:**
+
+👉 [https://github.com/orgs/ministryofjustice/sso](https://github.com/orgs/ministryofjustice/sso)
+
+![Entry Point](/images/overview.png)
+
+### Identity Providers
+
+Users authenticate via:
+
+* **Entra ID (Azure AD)** → `@justice.gov.uk`
+* **Google Workspace** → `@digital.justice.gov.uk`
+
+Auth0 brokers authentication between GitHub and these providers.
+
+## 🏢 GitHub Enterprise Structure
+
+**Enterprise:** `ministry-of-justice-uk`
+
+### Organisations
+
+* Criminal Injuries Compensation Authority
+* Judicial Appointments Commission UK
+* Justice AI Unit
+* Ministry of Justice
+* ministryofjustice-test
+* MOJ Analytical Services
+* MOJ Analytical Services External
+
+### SSO Enforcement
+
+* Enforced at **organisation level**
+* Configured via **Auth0 integration**
+* Entry point: `/orgs/ministryofjustice/sso`
+
+## 🤝 Trust Relationships
+
+### Auth0 trusts:
+
+* Azure AD (Entra ID)
+* Google Workspace
+* GitHub (Social connection)
+
+### Service Providers trust:
+
+* Auth0 Applications:
+
+  * DockerSSO
+  * PagerDuty
+  * GitHub
+
+### GitHub Enterprise trusts:
+
+* Auth0 (via GitHub SSO configuration)
+
+## 🎛️ Control Planes
+
+### 🔐 Auth0 Control Plane
+
+Manage via:
+
+👉 [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
+
+Controls:
+
+* Applications
+* Connections
+* Connection-to-application mappings
+
+### 🐙 GitHub Control Plane
+
+Controls:
+
+* Organisation SSO enforcement
+* Enterprise membership structure
+
+SSO endpoint:
+
+* `/orgs/ministryofjustice/sso`
+
+### ☁️ Azure (Entra ID) Control Plane
+
+Controls:
+
+* App registrations
+* Enterprise authentication (Entra ID)
+
+### 🌐 Google Control Plane
+
+Controls:
+
+* Google Workspace authentication
+* API configuration
+
+## 📊 Current State Summary
+
+* Auth0 (EU – Operations Engineering) is the **central SSO broker**
+* Docker uses **GitHub Social connection via DockerSSO**
+* PagerDuty uses **Auth0 application**
+* GitHub Enterprise uses **Auth0 for organisation SSO**
+* Azure AD and Google Workspace provide **enterprise identity**
+* GitHub Social is used specifically for **Docker authentication**
+* Multiple organisations sit under a **single GitHub enterprise**
+* The architecture is evolving toward:
+
+  * Standardisation
+  * Stronger security controls
+  * Audit readiness
+
+## ⚠️ Operational Notes
+
+* Changes to SSO flows should be validated across:
+
+  * Auth0 application mappings
+  * GitHub organisation SSO settings
+  * Identity provider configurations
+* Misconfiguration in any control plane can break authentication across multiple services
+* Always test changes in a controlled environment where possible
+
+## ⏱️ Session & Token Lifetimes
+
+Session and token lifetimes are configured in Auth0 and at the GitHub organisation level. Verify current values in the relevant dashboards — defaults may have been adjusted.
+
+| Token / Session | Location |
+|---|---|
+| Auth0 ID Token lifetime | Auth0 Dashboard → Applications → [App name] → Settings → Advanced → OAuth |
+| Auth0 Access Token lifetime | Auth0 Dashboard → APIs → Settings |
+| Auth0 session idle timeout | Auth0 Dashboard → Tenant Settings → Advanced → Login Session Management |
+| GitHub organisation SSO session | GitHub → Organisation → Settings → Authentication security |
+
+> ℹ️ Auth0 ships with default token expiry values. Review these as part of any security hardening exercise.
+
+## 🛠️ Troubleshooting
+
+### User cannot authenticate via SSO
+
+1. Confirm the user's email domain matches an expected identity provider (`@justice.gov.uk` → Entra ID, `@digital.justice.gov.uk` → Google Workspace).
+2. Check Auth0 logs: **Auth0 Dashboard → Monitoring → Logs** for failed login events.
+3. Verify the relevant Auth0 connection is enabled for the target application.
+4. Confirm the user account exists and is active in the upstream identity provider (Entra ID / Google Workspace).
+
+### User authenticated via Auth0 but is not a member of the GitHub organisation
+
+1. Navigate to [https://github.com/orgs/ministryofjustice/sso](https://github.com/orgs/ministryofjustice/sso) and check if the user appears as pending or linked.
+2. Ask the user to complete the GitHub SSO authorisation step by visiting the entry point URL above.
+3. If the user is already a member but cannot access resources, check if they have authorised the OAuth app for the organisation.
+
+### Auth0 connection failure
+
+1. Check identity provider status (Azure status page / Google Workspace Status Dashboard).
+2. Verify enterprise application / client credentials in Auth0 have not expired.
+3. Review Auth0 connection settings for the affected provider.
+
+### Escalation
+
+Raise issues in **#developer-experience-team** on Slack, or contact the Operations Engineering team who own the Auth0 tenant.
+
+## 📎 ADR Reference
+
+If an Architecture Decision Record (ADR) exists for the SSO design or a significant change to this architecture, link it here.
+
+* [ADR index](/documentation/adrs/adr-index.html) — view all recorded architecture decisions for the Developer Experience team
+
+> ℹ️ If no ADR exists for this architecture, consider creating one to document the rationale for the current SSO design. See [ADR-000](/documentation/adrs/000-record-architecture-decisions.html) for the format.
+
