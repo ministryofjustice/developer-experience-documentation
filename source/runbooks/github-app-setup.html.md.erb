@@ -1,0 +1,299 @@
+---
+owner_slack: "#developer-experience-team"
+title: GitHub App Setup Guide
+last_reviewed_on: 2026-03-19
+review_in: 12 months
+---
+
+# GitHub App Setup Guide
+
+This guide explains how to create a GitHub App and use it to generate temporary tokens for use in GitHub Actions workflows.
+
+## Why Use a GitHub App?
+
+GitHub Apps provide several advantages over personal access tokens (PATs):
+
+- **Enhanced Security**: Tokens are short-lived (1 hour by default) and scoped to specific repositories
+- **Fine-grained Permissions**: Grant only the permissions needed for specific operations
+- **Organization-level Authentication**: Not tied to individual user accounts
+- **Audit Trail**: Better tracking of which app performed which actions
+- **Higher Rate Limits**: GitHub Apps typically get higher API rate limits
+
+## Creating a GitHub App
+
+### Step 1: Access GitHub App Settings
+
+1. Navigate to your GitHub organization settings
+2. Go to **Settings** → **Developer settings** → **GitHub Apps**
+3. Click **New GitHub App**
+
+### Step 2: Configure Basic Information
+
+Fill in the following required fields:
+
+- **GitHub App name**: Choose a descriptive name (e.g., `developer-experience-github-automation`)
+- **Homepage URL**: Your organization or project URL
+- **Webhook**: Uncheck "Active" (not needed for automation workflows)
+
+### Step 3: Set Repository Permissions
+
+Configure the permissions based on your needs. For the Terraform CI workflow managing GitHub teams, you'll need:
+
+**Repository permissions:**
+- **Administration**: Read and write (for managing repository settings)
+- **Contents**: Read and write (for reading/updating repository content)
+- **Metadata**: Read-only (automatically granted)
+
+**Organization permissions:**
+- **Members**: Read and write (for managing team memberships)
+- **Administration**: Read and write (for managing teams and settings)
+
+### Step 4: Set Installation Options
+
+- **Where can this GitHub App be installed?**: Choose "Only on this account"
+
+### Step 5: Create the App
+
+1. Click **Create GitHub App**
+2. You'll be redirected to the app's settings page
+
+### Step 6: Generate a Private Key
+
+1. Scroll down to the **Private keys** section
+2. Click **Generate a private key**
+3. A `.pem` file will be downloaded automatically
+4. **Store this file securely** - you'll need it for authentication
+
+**Tip:** Store both the App ID and private key as GitHub Actions secrets for long-term operational reference (audit, rotation, recovery). Use a consistent naming pattern like:
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_PRIVATE_KEY`
+
+Restrict access to only the required repositories or environments and use environment protection rules for sensitive workflows.
+
+### Step 7: Note the App ID
+
+1. At the top of the app settings page, note the **App ID**
+2. You'll need this ID along with the private key
+
+### Step 8: Install the App
+
+1. Click **Install App** in the left sidebar
+2. Select your organization
+3. Choose whether to install on:
+   - **All repositories** (easier but less secure)
+   - **Only select repositories** (recommended - select the repositories that need access)
+4. Click **Install**
+
+**Installation approval:** For app installation on organization repositories, request approval from the Operations Engineering team by posting in the `#ask-operations-engineering` Slack channel. Include the App name, App ID, the list of repositories, and required permissions so the team can review and approve the installation.
+
+## Storing App Credentials Securely
+
+Store GitHub App credentials in GitHub Actions secrets so workflows can use them without committing sensitive values.
+
+### Required GitHub Secrets
+
+Store the following secrets in your repository, environment, or organization:
+
+1. **`GITHUB_APP_ID`**
+  - Value: The App ID from Step 7 (plain text number)
+
+2. **`GITHUB_APP_PRIVATE_KEY`**
+  - Value: The entire contents of the `.pem` file from Step 6
+
+### Add Secrets in GitHub
+
+1. In your repository, go to **Settings** → **Secrets and variables** → **Actions**
+2. Choose where to store them:
+  - **Repository secrets** for repo-specific automation
+  - **Environment secrets** for protected deployment workflows
+  - **Organization secrets** for shared use across repos
+3. Add `GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY`
+
+You can also set secrets with GitHub CLI:
+
+```bash
+# Store App ID
+gh secret set GITHUB_APP_ID --body "123456"
+
+# Store private key (reads from file)
+gh secret set GITHUB_APP_PRIVATE_KEY < your-app-private-key.pem
+```
+
+**Important:** Limit secret access to the smallest possible scope and use protected environments for production workflows.
+
+## Using the GitHub App in Workflows
+
+### Prerequisites
+
+Your workflow needs `contents: read` permission and access to GitHub Actions secrets:
+
+```yaml
+permissions:
+  contents: read
+
+jobs:
+  your-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+```
+
+### Store it securely
+
+Use GitHub Actions secrets to provide credentials to your workflow:
+
+```yaml
+env:
+  GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+  GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+```
+
+This keeps credentials encrypted at rest and only exposes them during the workflow run.
+
+### Generate Installation Token
+
+Use the credentials from GitHub Actions secrets to generate a short-lived GitHub App token:
+
+```yaml
+- name: Generate GitHub App installation token
+  id: gh_app_token
+  uses: actions/create-github-app-token@v2
+  with:
+    app-id: ${{ env.GITHUB_APP_ID }}
+    private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+    owner: ministryofjustice  # Your organization name
+    repositories: |
+      repo-one
+      repo-two
+      repo-three
+```
+
+### Using the Token
+
+The generated token is available as an output from the step:
+
+```yaml
+- name: Use the token
+  env:
+    GH_TOKEN: ${{ steps.gh_app_token.outputs.token }}
+  run: |
+    # Use the token for GitHub API calls or with gh CLI
+    gh api user
+```
+
+### For Terraform Provider
+
+Export the token as an environment variable that Terraform can use:
+
+```yaml
+- name: Export Terraform GitHub token
+  run: echo "TF_VAR_github_token=${{ steps.gh_app_token.outputs.token }}" >> "$GITHUB_ENV"
+```
+
+Terraform will automatically load variables prefixed with `TF_VAR_`.
+
+### Complete Workflow Example
+
+Here's a complete example showing GitHub Secrets-based credential handling and Terraform usage:
+
+```yaml
+name: Terraform CI
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      terraform_apply:
+        description: "Run terraform apply (true|false)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-apply-prod:
+    name: "GitHub"
+    runs-on: ubuntu-latest
+    environment: GitHub
+    env:
+      ENV: "github"
+      TF_VAR_github_owner: "ministryofjustice"
+      GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+      GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App installation token
+        id: gh_app_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ env.GITHUB_APP_ID }}
+          private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ env.TF_VAR_github_owner }}
+          repositories: |
+            ministry-of-justice-developer-experience
+            moj-github-discovery
+
+      - name: Export Terraform GitHub token
+        run: echo "TF_VAR_github_token=${{ steps.gh_app_token.outputs.token }}" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init -reconfigure
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve
+```
+
+## Token Lifecycle
+
+- **Duration**: Tokens expire after 1 hour by default
+- **Scope**: Limited to repositories specified in the workflow
+- **Permissions**: Restricted to the permissions granted to the GitHub App
+- **Renewal**: Generate a new token for each workflow run
+
+## Security Best Practices
+
+1. **Least Privilege**: Only grant permissions the app actually needs
+2. **Repository Scoping**: Limit installation to specific repositories when possible
+3. **Rotate Keys**: Periodically generate new private keys and update secrets
+4. **Monitor Usage**: Regularly review the app's activity in audit logs
+5. **Secure Storage**: Never commit private keys or secrets to version control
+6. **Environment Protection**: Use GitHub environment protection rules for production workflows
+
+## Troubleshooting
+
+### "Bad Credentials" Error
+- Verify the App ID is correct
+- Ensure the private key secret contains the full PEM content
+- Check that the app is installed on the target organization/repositories
+
+### "Resource not accessible by integration" Error
+- Review the app's permissions - you may need additional scopes
+- Verify the app is installed on the specific repository
+- Check that the repository is listed in the workflow's `repositories:` field
+
+### Token Expires During Long Workflows
+- GitHub App tokens expire after 1 hour
+- For long-running workflows, generate a new token as needed
+- Consider breaking workflows into smaller jobs
+
+## Additional Resources
+
+- [GitHub Apps Documentation](https://docs.github.com/en/apps)
+- [Creating GitHub App Tokens in Actions](https://github.com/actions/create-github-app-token)
+- [GitHub Apps Best Practices](https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/best-practices-for-creating-a-github-app)

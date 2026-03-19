@@ -1,61 +1,59 @@
-# Template Documentation Site
+# Developer Experience Documentation
 
-[![Ministry of Justice Repository Compliance Badge](https://github-community.service.justice.gov.uk/repository-standards/api/template-documentation-site/badge)](https://github-community.service.justice.gov.uk/repository-standards/template-documentation-site)
+This repository contains the Ministry of Justice Developer Experience documentation site, built with the Government Digital Service [tech-docs-gem](https://github.com/alphagov/tech-docs-gem).
 
-Use this repository to create a documentation site using the Government Digital Service's [tech-docs-gem](https://github.com/alphagov/tech-docs-gem).
+It is the home for guidance on:
 
-This is recommended for MoJ's technical documentation because:
+- getting started with this documentation site
+- writing and reviewing documentation consistently
+- publishing and maintaining high-quality technical content
+- repository structure and contribution workflow
 
-- It uses the [GOV.UK Design System](https://design-system.service.gov.uk/) and makes it consistent with other technical documentation sites, including:
+## Core team repositories
 
-  - [Cloud Platform's user guide](https://user-guide.cloud-platform.service.justice.gov.uk/)
+- [ministryofjustice/ministry-of-justice-developer-experience](https://github.com/ministryofjustice/ministry-of-justice-developer-experience)
+- [ministryofjustice/moj-github-discovery](https://github.com/ministryofjustice/moj-github-discovery)
 
-  - [Modernisation Platform's user guide](https://user-guide.modernisation-platform.service.justice.gov.uk/)
+## Documentation structure
 
-  - [MoJ's technical guidance](https://technical-guidance.service.justice.gov.uk/)
+The primary docs are in `source/` and organised by topic, including:
 
-  - [Cloud Optimisation & Accountability](https://cloud-optimisation-and-accountability.justice.gov.uk/)
+- `get_started/`
+- `working_with_docs/`
+- `delivery/`
+- `reference/`
+- `support/`
 
-- Technical and non-technical team members can write your documentation using the [‘docs as code’](https://technology.blog.gov.uk/2017/08/25/why-we-use-a-docs-as-code-approach-for-technical-documentation/) approach
+Historical GDS Technical Documentation Template content is retained in `source/legacy-tdt-documentation/` for reference.
 
----
+## Developing locally
 
-# How to use this template
-
-1. Create a repository using this template ([shortcut](https://github.com/new?template_name=template-documentation-site&template_owner=ministryofjustice))
-
-1. Follow the setup instructions from [ministryofjustice/template-repository](https://github.com/ministryofjustice/template-repository?tab=readme-ov-file#setup-instructions)
-
-1. Remove the legacy technical documentation site
-
-    - `source/legacy-tdt-documentation`
-
-For guidance on using the tech-docs-gem, please refer to the [legacy documentation](https://ministryofjustice.github.io/template-documentation-site/legacy-tdt-documentation).
-
-# Developing
-
-## Requirements
+### Requirements
 
 - Docker
 
-## Previewing locally
+### Preview the site
 
-Running the following command will run your technical documentation site locally using [ministryofjustice/tech-docs-github-pages-publisher](https://github.com/ministryofjustice/tech-docs-github-pages-publisher), allowing you to access it by visiting <http://127.0.0.1:4567> in your browser
+Run the site locally (available at <http://127.0.0.1:4567>):
 
 ```bash
 make preview
 ```
 
-## Checking links locally
+### Build the site package
 
-This repository includes a GitHub Actions workflow that uses [Lychee](https://github.com/lycheeverse/lychee) for checking links.
+```bash
+make package
+```
 
-To perform this locally, you will either need to use the dev container or install Lychee, and the run:
+### Check links
+
+This repo uses [Lychee](https://github.com/lycheeverse/lychee) in CI. To run link checks locally:
 
 ```bash
 make link-check
 ```
 
-# Publishing
+## Publishing
 
-This template includes a GitHub Actions workflow ([`.github/workflows/publish.yml`](.github/workflows/publish.yml)) for publishing to GitHub Pages when merging to `main`.
+The GitHub Actions workflow in `.github/workflows/publish.yml` publishes to GitHub Pages when changes are merged to `main`.

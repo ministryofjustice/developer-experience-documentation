@@ -1,18 +1,18 @@
 ---
 # https://github.com/alphagov/tech-docs-gem/blob/main/example/config/tech-docs.yml
 
-host: https://ministryofjustice.github.io/template-documentation-site
+host: https://ministryofjustice.github.io/developer-experience-documentation
 show_govuk_logo: false
-service_name: Template Documentation Site
+service_name: Developer Experience Documentation
 service_link: /
-header_links:
+header_links: 
 enable_search: true
 collapsible_nav: true
 max_toc_heading_level: 3
 prevent_indexing: true
 show_contribution_banner: true
-github_repo: ministryofjustice/template-documentation-site
+github_repo: ministryofjustice/developer-experience-documentation
 github_branch: main
-full_service_name: Template Documentation Site
+full_service_name: Developer Experience Documentation
 show_expiry: true
 show_review_banner: true

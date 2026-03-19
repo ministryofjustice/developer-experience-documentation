@@ -1,0 +1,140 @@
+---
+owner_slack: "#nvvs-devops"
+title: Creating Github PAT Token
+last_reviewed_on: 2025-05-07
+review_in: 6 months
+---
+# Creating a GitHub Personal Access Token (PAT)
+
+This runbook outlines the steps required to generate and securely use a GitHub Personal Access Token (PAT) for use with CI/CD systems or local development as per [ADR 011 - Use GitHub Actions for CI/CD](../documentation/adrs/011-use-github-actions-for-ci-cd.html).
+
+## Purpose
+
+GitHub PATs are used for authenticating against GitHub APIs or repositories in contexts where SSH keys are not applicable, such as:
+
+* Authenticating with GitHub Actions for private repository access
+* Using CLI tools (e.g., `gh`, `git`, or `curl`) that require GitHub API access
+* Interacting with GitHub via scripts or Terraform providers
+
+## Benefits
+
+* Granular access control via fine-grained scopes
+* Easier than setting up SSH keys in CI/CD pipelines
+* Supports GitHub CLI (`gh auth login`)
+* Required for workflows needing GitHub API authentication (e.g., Terraform providers, GitHub CLI)
+
+## Prerequisites
+
+* GitHub account with access to the required repositories or org
+* 2FA enabled (required for token generation)
+
+## Steps
+
+### 1. Generate a PAT
+
+1. Navigate to [https://github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **"Fine-grained tokens"** (recommended)
+3. Click **"Generate new token"**
+4. Provide a **name** for the token (e.g., `ci-pat-nvvs`)
+5. Set an **expiration** (default: 30 days, recommended: 90 days or less for CI)
+6. Select **Repositories**:
+
+  * Choose "Only select repositories"
+  * Pick the repo(s) you will access with the token
+7. Select the **Permissions**:
+
+  * For CI/CD pipelines: `contents: read`, `metadata: read`, `actions: read/write`
+  * For Terraform GitHub provider: `repo`, `admin:org`, `read:org` (depending on usage)
+8. Click **Generate token**
+9. **Copy the token** and store it securely (you won't be able to see it again)
+
+### 2. Store Token Securely
+
+Depending on your usage context:
+
+#### In GitHub Actions
+
+1. Navigate to the repository’s **Settings > Secrets and variables > Actions**
+2. Add a new secret:
+
+  * Name: `GH_PAT`
+  * Value: *your copied token*
+
+#### In `aws-vault` or `.env` file (for local dev)
+
+```bash
+export GITHUB_TOKEN=your_generated_token
+```
+
+#### For Terraform Provider
+
+If using the GitHub provider in Terraform:
+
+```hcl
+provider "github" {
+  token = var.github_token
+  owner = "ministryofjustice"
+}
+```
+
+And in your `terraform.tfvars` or `.env`:
+
+```hcl
+GITHUB_TOKEN="your_generated_token"
+```
+
+### 3. Test the Token
+
+To verify the token is working:
+
+```bash
+curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user
+```
+
+Should return JSON output of your GitHub user profile.
+
+Or with `gh` CLI:
+
+```bash
+gh auth login --with-token < your_token.txt
+gh repo list ministryofjustice --limit 5
+```
+
+### 4. Token Rotation Policy
+
+PATs should be rotated **every 90 days** or as per organizational policy. To avoid service disruption:
+
+* Store the expiration date as a calendar reminder
+* Create and test new token before deleting old one
+* Update all relevant secrets or environments
+
+### 5. Revoking a PAT
+
+1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **"Revoke"** next to the relevant token
+
+### Checklist
+
+<ol>
+    <li>
+        <label>Navigate to GitHub token settings</label>
+        <input type="checkbox" value="completed" name="status">
+    </li>
+    <li>
+        <label>Generate fine-grained PAT with correct scopes</label>
+        <input type="checkbox" value="completed" name="status">
+    </li>
+    <li>
+        <label>Store PAT securely (GitHub Secret / .env / Vault)</label>
+        <input type="checkbox" value="completed" name="status">
+    </li>
+    <li>
+        <label>Test the token (curl / gh CLI)</label>
+        <input type="checkbox" value="completed" name="status">
+    </li>
+    <li>
+        <label>Set rotation reminder</label>
+        <input type="checkbox" value="completed" name="status">
+    </li>
+</ol>
+
