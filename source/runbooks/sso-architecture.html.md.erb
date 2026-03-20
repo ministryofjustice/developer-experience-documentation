@@ -5,26 +5,26 @@ last_reviewed_on: 2026-03-19
 review_in: 6 months
 ---
 
-# 🔐 SSO Architecture Runbook
+# SSO Architecture Runbook
 
-## 📌 Purpose
+## Purpose
 
-This runbook documents the **current Single Sign-On (SSO) architecture** used across Operations Engineering services. It provides a clear reference for authentication flows, control planes, and trust relationships.
+This runbook documents the **current Single Sign-On (SSO) architecture** used across Engineering services. It provides a clear reference for authentication flows, control planes, and trust relationships.
 
-## 🌍 Auth0 Tenant
+## Auth0 Tenant
 
 **Region:** EU
 **Tenant:** Operations Engineering
 
-👉 [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
+* [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
 
 Auth0 acts as the **central SSO broker** across all integrated services.
 
-## 🧭 Architecture Overview
+## Architecture Overview
 
 ![GitHub SSO architecture](/images/github_SSO.png)
 
-### 🔗 Service Providers (SP)
+### Service Providers (SP)
 
 The following services initiate authentication:
 
@@ -34,7 +34,7 @@ The following services initiate authentication:
 
 Users access these services directly, which then delegate authentication to Auth0.
 
-### 🔐 Auth0 (Central Broker)
+### Auth0 (Central Broker)
 
 Auth0 manages authentication and routes users to appropriate identity providers.
 
@@ -50,11 +50,11 @@ Auth0 manages authentication and routes users to appropriate identity providers.
 * Google Workspace (Enterprise)
 * Azure AD / Entra ID (Enterprise)
 
-## 🔄 GitHub SSO Flow (Enterprise)
+## GitHub SSO Flow (Enterprise)
 
 **Entry point:**
 
-👉 [https://github.com/orgs/ministryofjustice/sso](https://github.com/orgs/ministryofjustice/sso)
+* [https://github.com/orgs/ministryofjustice/sso](https://github.com/orgs/ministryofjustice/sso)
 
 ![Entry Point](/images/overview.png)
 
@@ -67,7 +67,7 @@ Users authenticate via:
 
 Auth0 brokers authentication between GitHub and these providers.
 
-## 🏢 GitHub Enterprise Structure
+## GitHub Enterprise Structure
 
 **Enterprise:** `ministry-of-justice-uk`
 
@@ -87,7 +87,7 @@ Auth0 brokers authentication between GitHub and these providers.
 * Configured via **Auth0 integration**
 * Entry point: `/orgs/ministryofjustice/sso`
 
-## 🤝 Trust Relationships
+## Trust Relationships
 
 ### Auth0 trusts:
 
@@ -107,13 +107,13 @@ Auth0 brokers authentication between GitHub and these providers.
 
 * Auth0 (via GitHub SSO configuration)
 
-## 🎛️ Control Planes
+## Control Planes
 
-### 🔐 Auth0 Control Plane
+### Auth0 Control Plane
 
 Manage via:
 
-👉 [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
+* [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
 
 Controls:
 
@@ -121,7 +121,7 @@ Controls:
 * Connections
 * Connection-to-application mappings
 
-### 🐙 GitHub Control Plane
+### GitHub Control Plane
 
 Controls:
 
@@ -132,21 +132,21 @@ SSO endpoint:
 
 * `/orgs/ministryofjustice/sso`
 
-### ☁️ Azure (Entra ID) Control Plane
+### Azure (Entra ID) Control Plane
 
 Controls:
 
 * App registrations
 * Enterprise authentication (Entra ID)
 
-### 🌐 Google Control Plane
+### Google Control Plane
 
 Controls:
 
 * Google Workspace authentication
 * API configuration
 
-## 📊 Current State Summary
+## Current State Summary
 
 * Auth0 (EU – Operations Engineering) is the **central SSO broker**
 * Docker uses **GitHub Social connection via DockerSSO**
@@ -161,7 +161,7 @@ Controls:
   * Stronger security controls
   * Audit readiness
 
-## ⚠️ Operational Notes
+## Operational Notes
 
 * Changes to SSO flows should be validated across:
 
@@ -171,7 +171,7 @@ Controls:
 * Misconfiguration in any control plane can break authentication across multiple services
 * Always test changes in a controlled environment where possible
 
-## ⏱️ Session & Token Lifetimes
+## Session & Token Lifetimes
 
 Session and token lifetimes are configured in Auth0 and at the GitHub organisation level. Verify current values in the relevant dashboards — defaults may have been adjusted.
 
@@ -182,9 +182,9 @@ Session and token lifetimes are configured in Auth0 and at the GitHub organisati
 | Auth0 session idle timeout | Auth0 Dashboard → Tenant Settings → Advanced → Login Session Management |
 | GitHub organisation SSO session | GitHub → Organisation → Settings → Authentication security |
 
-> ℹ️ Auth0 ships with default token expiry values. Review these as part of any security hardening exercise.
+> Auth0 ships with default token expiry values. Review these as part of any security hardening exercise.
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### User cannot authenticate via SSO
 
@@ -207,13 +207,13 @@ Session and token lifetimes are configured in Auth0 and at the GitHub organisati
 
 ### Escalation
 
-Raise issues in **#developer-experience-team** on Slack, or contact the Operations Engineering team who own the Auth0 tenant.
+Raise issues in **#developer-experience-team** on Slack.
 
-## 📎 ADR Reference
+## ADR Reference
 
 If an Architecture Decision Record (ADR) exists for the SSO design or a significant change to this architecture, link it here.
 
 * [ADR index](/documentation/adrs/adr-index.html) — view all recorded architecture decisions for the Developer Experience team
 
-> ℹ️ If no ADR exists for this architecture, consider creating one to document the rationale for the current SSO design. See [ADR-000](/documentation/adrs/000-record-architecture-decisions.html) for the format.
+> If no ADR exists for this architecture, consider creating one to document the rationale for the current SSO design. See [ADR-000](/documentation/adrs/000-record-architecture-decisions.html) for the format.
 
