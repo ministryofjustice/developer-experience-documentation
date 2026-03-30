@@ -13,3 +13,12 @@ https://tdt-documentation.london.cloudapps.digital
 https://digitalaccessibilitycentre.org
 https://www.cloud.service.gov.uk
 https://docs.cloud.service.gov.uk
+
+# GitHub API endpoints that require authentication
+https://api.github.com/user
+
+# GitHub settings pages (require authentication)
+https://github.com/*/settings/*
+
+# Auth0 management dashboard (requires login)
+https://manage.auth0.com/dashboard/*
