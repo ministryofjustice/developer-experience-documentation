@@ -1,7 +1,7 @@
 ---
 owner_slack: "#developer-experience-team"
 title: SSO Architecture Runbook
-last_reviewed_on: 2026-03-19
+last_reviewed_on: 2026-04-20
 review_in: 6 months
 ---
 
@@ -10,6 +10,16 @@ review_in: 6 months
 ## Purpose
 
 This runbook documents the **current Single Sign-On (SSO) architecture** used across Engineering services. It provides a clear reference for authentication flows, control planes, and trust relationships.
+
+## Audience
+
+This runbook is primarily for:
+
+* **Developer Experience (DevX) engineers**: to operate and debug the shared SSO integration (Auth0, supported GitHub organisations, and service-provider app mappings).
+* **Developers using supported services**: to understand the authentication path and common failure points during onboarding or incident triage.
+* **Security and platform stakeholders**: to understand trust boundaries, ownership, and operational controls.
+
+This document is not intended to be a full implementation guide for custom SSO setups managed outside Developer Experience (DevX) Team.
 
 ## Auth0 Tenant
 
@@ -81,70 +91,27 @@ Auth0 brokers authentication between GitHub and these providers.
 * MOJ Analytical Services
 * MOJ Analytical Services External
 
+### SSO support scope
+
+The enterprise contains organisations with different support ownership models.
+
+| Organisation | SSO enabled | Support ownership |
+|---|---|---|
+| Criminal Injuries Compensation Authority | Yes | DevX (supported) |
+| Judicial Appointments Commission UK | Yes | DevX (supported) |
+| Ministry of Justice | Yes | DevX (supported) |
+| ministryofjustice-test | Yes | DevX (supported) |
+| MOJ Analytical Services | Yes | DevX (supported) |
+| MOJ Analytical Services External | Yes | DevX (supported) |
+| Justice AI Unit | Yes | Custom setup (outside DevX support) |
+
+> If ownership changes, update this table as part of the same change and inform **#developer-experience-team**.
+
 ### SSO Enforcement
 
 * Enforced at **organisation level**
 * Configured via **Auth0 integration**
 * Entry point: `/orgs/ministryofjustice/sso`
-
-## Trust Relationships
-
-### Auth0 trusts:
-
-* Azure AD (Entra ID)
-* Google Workspace
-* GitHub (Social connection)
-
-### Service Providers trust:
-
-* Auth0 Applications:
-
-  * DockerSSO
-  * PagerDuty
-  * GitHub
-
-### GitHub Enterprise trusts:
-
-* Auth0 (via GitHub SSO configuration)
-
-## Control Planes
-
-### Auth0 Control Plane
-
-Manage via:
-
-* [https://manage.auth0.com/dashboard/eu/operations-engineering/applications](https://manage.auth0.com/dashboard/eu/operations-engineering/applications)
-
-Controls:
-
-* Applications
-* Connections
-* Connection-to-application mappings
-
-### GitHub Control Plane
-
-Controls:
-
-* Organisation SSO enforcement
-* Enterprise membership structure
-
-SSO endpoint:
-
-* `/orgs/ministryofjustice/sso`
-
-### Azure (Entra ID) Control Plane
-
-Controls:
-
-* App registrations
-* Enterprise authentication (Entra ID)
-
-### Google Control Plane
-
-Controls:
-
-* Google Workspace authentication
-* API configuration
 
 ## Current State Summary
 
@@ -173,16 +140,38 @@ Controls:
 
 ## Session & Token Lifetimes
 
-Session and token lifetimes are configured in Auth0 and at the GitHub organisation level. Verify current values in the relevant dashboards — defaults may have been adjusted.
+Session and token lifetimes are configured in Auth0 and at the GitHub organisation level. Use the table below to find exact values quickly during debugging.
 
-| Token / Session | Location |
-|---|---|
-| Auth0 ID Token lifetime | Auth0 Dashboard → Applications → [App name] → Settings → Advanced → OAuth |
-| Auth0 Access Token lifetime | Auth0 Dashboard → APIs → Settings |
-| Auth0 session idle timeout | Auth0 Dashboard → Tenant Settings → Advanced → Login Session Management |
-| GitHub organisation SSO session | GitHub → Organisation → Settings → Authentication security |
+| Token / Session | Default (if not overridden) | Where to check | Why it matters in incidents |
+|---|---|---|---|
+| Auth0 ID Token lifetime | 36,000 seconds (10 hours) | Auth0 Dashboard → Applications → [App name] → Settings → Advanced → OAuth | Expired ID tokens can cause forced reauthentication in browser-based flows. |
+| Auth0 Access Token lifetime | 86,400 seconds (24 hours) | Auth0 Dashboard → APIs → Settings | Expired access tokens can break API calls while the user appears logged in. |
+| Auth0 refresh token idle lifetime (when refresh token expiration is enabled) | 2,592,000 seconds (30 days) | Auth0 Dashboard → Applications → [App name] → Settings → Refresh Token Expiration | Determines how long a refresh token can sit unused before reauthentication is required. |
+| Auth0 session idle timeout | 3 days (default), up to 100 days | Auth0 Dashboard → Tenant Settings → Advanced → Login Session Management | Idle timeout explains logouts after inactivity. |
+| Auth0 absolute session lifetime | 30 days (default), up to 365 days | Auth0 Dashboard → Tenant Settings → Advanced → Login Session Management | Absolute lifetime explains hard logouts despite user activity. |
+| GitHub organisation SSO session | Generally 24 hours (defined by IdP session policy) | GitHub → Organisation → Settings → Authentication security (and IdP session policy) | Expiry can require users to re-authorise SSO for organisation resources. |
 
-> Auth0 ships with default token expiry values. Review these as part of any security hardening exercise.
+During triage, capture the configured value and observed expiry time in incident notes to confirm whether expiry, not permissions, caused the failure.
+
+> These are platform defaults and common baselines; the configured value in your tenant/organisation always takes precedence.
+
+## Key Rotation
+
+SSO depends on signing keys managed by upstream identity providers and trust metadata consumed by Auth0/GitHub.
+
+### What rotates
+
+* **Entra ID signing keys** used to sign authentication responses.
+* **Google Workspace signing keys** used for enterprise identity assertions.
+* **Any client secrets/certificates** configured for enterprise connections.
+
+### Operational guidance
+
+1. Monitor for key rollover notices from Entra ID and Google.
+2. Ensure Auth0 connections use metadata/JWKS-based configuration where possible so new signing keys are discovered automatically.
+3. After announced rollover windows, test end-to-end login for both `@justice.gov.uk` and `@digital.justice.gov.uk` users.
+4. If validation failures occur, check Auth0 logs for signature/key ID mismatch errors.
+5. Escalate ownership-specific failures to the relevant control-plane owner (DevX, Tech Services, or Google Workspace administrators).
 
 ## Troubleshooting
 
