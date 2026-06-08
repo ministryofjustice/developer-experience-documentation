@@ -1,1 +1,13 @@
 @import "govuk_tech_docs";
+
+// Mermaid diagram styling
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.5em 0;
+  
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}

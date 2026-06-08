@@ -1,0 +1,235 @@
+---
+owner_slack: "#developer-experience-team"
+title: Pipeline Architecture
+last_reviewed_on: 2026-06-04
+review_in: 6 months
+---
+
+# Pipeline Architecture
+
+## Stage Model
+
+The ingestion pipeline follows an explicit stage model where each module has a clear responsibility and defined interface.
+
+<pre class="mermaid">
+graph TD
+  A[CLI parseArgs] --> B[Config loadSources]
+  B --> C[Core runIngestion]
+  C --> D[Core ingestSource]
+  D --> E[Connector GitHub]
+  E --> F[Discovery]
+  F --> G[Parser Registry]
+  G --> H1[techDocsParser]
+  G --> H2[markdownParser]
+  H1 --> I[IR MDAST]
+  H2 --> I
+  I --> J[Transforms Pipeline]
+  J --> K[Renderer GFM]
+  K --> L[Asset Pipeline]
+  L --> M[Output Writer]
+  M --> N[Reporter]
+
+  style I fill:#fff6cc
+  style E fill:#e1f5ff
+  style L fill:#c8e6c9
+</pre>
+
+**Key Design Points:**
+- Each box is a module with a clear responsibility
+- Colored sections: execution flow (blue), intermediate representation (yellow), extensibility contracts (green)
+- The parser registry and asset pipeline are the main extension points
+
+---
+
+### 1. Connector
+
+**Purpose:** Fetches raw content from a source system and makes it available locally.
+
+**Current Implementation:** `connectors/githubConnector.mjs`
+- Clones repositories shallowly (depth=1) for efficiency
+- Pulls updates on subsequent runs
+- Caches repos in `.ingestion-cache/` for reuse
+
+**Interface:**
+```javascript
+fetchSource(source) => repoDir (string)
+```
+
+**Future Extensibility:** Additional connectors can be registered in a `connectorRegistry.mjs` to support S3, Confluence, GitLab, etc.
+
+---
+
+### 2. Parser
+
+**Purpose:** Converts source-native documentation format to a universal intermediate representation (MDAST).
+
+**Current Implementations:**
+- `parsers/techDocsParser.mjs` — MoJ Tech Docs Generator (ERB + markdown)
+- `parsers/markdownParser.mjs` — Plain markdown/mdx
+
+**Interface:**
+```javascript
+parse(file, source) => IR {
+  sourcePath: string,       // original relative file path
+  outputPath: string,       // normalized output path
+  frontmatter: object,      // YAML metadata (mutable)
+  ast: Root,                // MDAST tree (mutable)
+  format: string            // format identifier
+}
+```
+
+**Registry:** `parsers/parserRegistry.mjs` maps format strings to parser implementations.
+
+**Key Design:** Parsers produce MDAST (Markdown Abstract Syntax Tree) from `remark`, enabling the transforms pipeline to operate reliably on structured data instead of regex patterns.
+
+---
+
+### 3. Transforms Pipeline
+
+**Purpose:** Apply source-agnostic improvements to the IR after parsing.
+
+Three independent transforms run in sequence, each mutating the IR in place:
+
+#### 3.1 Frontmatter Transform
+**Module:** `transforms/frontmatterTransform.mjs`
+
+Enriches the IR's frontmatter object with portal-level metadata:
+- `source_repo` — GitHub repository URL
+- `source_path` — Original file path in source repo
+- `ingested_at` — ISO timestamp of ingestion
+- `owner_slack` — Team Slack channel (inherited from source config if not in file)
+
+#### 3.2 Content Cleanup Transform
+**Module:** `transforms/contentCleanupTransform.mjs`
+
+Removes structural artifacts left by upstream processing using MDAST visitors:
+- Empty heading nodes left after ERB tag stripping
+- Extensible for additional hygiene rules
+
+#### 3.3 Link Rewrite Transform
+**Module:** `transforms/linkRewriteTransform.mjs`
+
+Rewrites links in the MDAST to match portal routing conventions. Currently handles tech-docs-template format only.
+
+**Tech-Docs Rules:**
+- `/docsPath/page.html` → `/docs/<source-id>/page` (absolute within docs)
+- `/page.html` → `/docs/<source-id>/page` (root-relative)
+- `page.html` → `page` (relative — strip `.html` only)
+- ERB code block language (`\`\`\`erb`) → plain code block
+
+**Design:** Uses `unist-util-visit` to traverse and mutate the AST reliably. No string regex needed.
+
+---
+
+### 4. Renderer
+
+**Module:** `renderer/gfmRenderer.mjs`
+
+Converts the transformed MDAST back to GitHub Flavored Markdown with YAML frontmatter.
+
+**Interface:**
+```javascript
+render(ir) => {
+  outputRelative: string,   // computed output path
+  content: string           // full markdown + frontmatter
+}
+```
+
+Uses `remark.stringify()` with the GFM plugin for consistent output.
+
+---
+
+### 5. Asset Processor
+
+**Modules:** `assets.mjs`, `ingestSource.mjs`
+
+Extracts asset references from the rendered markdown, resolves their paths relative to the source docs root, and copies them to two locations:
+
+- `content/docs/<source-id>/` — Content directory (cached alongside pages)
+- `public/docs/<source-id>/` — Static assets directory (served publicly)
+
+**Asset Types:** Filtered by file extension (png, jpg, svg, pdf, etc.) via `src/lib/markdown/assetExtensions.json` — shared between ingestion and runtime.
+
+**Design:** Operates on the final markdown to capture all asset references consistently, regardless of how they were referenced in the original format.
+
+---
+
+### 6. Output Writer
+
+**Modules:** `ingestSource.mjs`, `pipeline.mjs`
+
+Writes pages, assets, and metadata to the file system:
+- Individual page files under `content/docs/<source-id>/`
+- `_meta.json` containing source metadata (name, description, category, repo, ingestion timestamp)
+- Dual asset copy (content + public)
+
+Clears existing output before writing to avoid stale files.
+
+---
+
+## Orchestration
+
+**Entry Point:** `scripts/ingest.mjs` → `pipeline.mjs`
+
+<pre class="mermaid">
+flowchart TD
+    A[CLI args] --> B[parseCliArgs dry-run and target source ID]
+    B --> C[loadSources from sources.json]
+    C --> D{Each enabled source}
+    D --> E[fetchSource connector]
+    E --> F[discoverFiles by format]
+    F --> G{Each file}
+    G --> H[parse parser registry]
+    H --> I[frontmatterTransform]
+    I --> J[contentCleanupTransform]
+    J --> K[linkRewriteTransform]
+    K --> L[render]
+    L --> M[write to content docs source-id]
+    M --> N[collectReferencedAssets]
+    N --> O[copyAssets dual content and public]
+    O --> P[writeMetadata _meta.json]
+    P --> Q[report stats]
+
+    style D fill:#e8f4fd
+    style G fill:#e8f4fd
+</pre>
+
+In dry-run mode, the discovery and conversion steps run but no files are written.
+
+---
+
+## Intermediate Representation (IR)
+
+The IR is the **MDAST** (Markdown Abstract Syntax Tree) produced by `remark.parse()`, plus a wrapper object:
+
+```javascript
+{
+  sourcePath: string,       // 'docs/getting-started.html.md.erb'
+  outputPath: string,       // 'docs/getting-started.md'
+  frontmatter: object,      // { title: '...', owner_slack: '...', ... }
+  ast: Root,                // MDAST root node (mutable)
+  format: string            // 'tech-docs-template' or 'markdown'
+}
+```
+
+**Design Choice:** MDAST is the universal IR, not a custom schema, because:
+- `remark` is already a project dependency
+- AST visitors (`unist-util-visit`) are more reliable than regex
+- MDAST is standardized (unist spec), making it familiar to future maintainers
+- Transforms operate on structured data, not strings
+
+---
+
+## Testing
+
+Unit tests verify:
+- Config parsing and source loading
+- Parser IR shapes (via MDAST node structure)
+- Transform behavior (via AST visitors)
+- File discovery rules per format
+- Asset reference extraction
+- Full conversion parity with existing ingestion (end-to-end)
+
+Fixtures are committed to `tests/fixtures/ingestion/` to avoid temp directory churn.
+
+See `scripts/ingestion/README.md` and test files for running and extending tests.
