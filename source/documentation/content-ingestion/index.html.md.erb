@@ -1,0 +1,63 @@
+---
+owner_slack: "#developer-experience-team"
+title: Content Ingestion Pipeline
+last_reviewed_on: 2026-06-04
+review_in: 6 months
+---
+
+# Content Ingestion Pipeline
+
+The ingestion pipeline automatically fetches documentation from configured source repositories, converts them to a unified format, and writes them into the portal. It enables the portal to support multiple documentation sources and formats without duplicating transformation logic.
+
+## Quick Start
+
+From the portal repository root:
+
+```bash
+npm run ingest              # Fetch and ingest all enabled sources
+npm run ingest:dry-run      # Preview what would be processed without writing files
+npm run ingest:build        # Ingest, build portal, and generate search index
+```
+
+## Current Sources
+
+The pipeline currently supports:
+
+- **Tech Docs Generator** (`.html.md.erb` and `.md` files) — MoJ's legacy documentation format
+- **Markdown** (`.md` and `.mdx` files) — Standard GitHub-flavored markdown
+
+Sources are configured in `sources.json` with a `format` field that routes to the appropriate parser.
+
+## Architecture Overview
+
+The ingestion pipeline is organized into modular stages, each with a clear responsibility:
+
+<pre class="mermaid">
+graph LR
+  A[Source Repository] -->|Connector| B[Local Files]
+  B -->|Parser| C[MDAST IR]
+  C -->|Transforms| D[Enhanced IR]
+  D -->|Renderer| E[Markdown Files]
+  E -->|Assets| F[Output Dirs]
+
+  style A fill:#e1f5ff
+  style F fill:#c8e6c9
+</pre>
+
+1. **Connector** — Fetches raw content from a source system (GitHub, S3, Confluence, etc.)
+2. **Parser** — Converts source-native docs to a universal internal representation (MDAST)
+3. **Transforms** — Apply source-agnostic improvements (metadata enrichment, content cleanup, link rewriting)
+4. **Renderer** — Converts the internal representation back to GitHub Flavored Markdown
+5. **Asset Processor** — Extracts, resolves, and copies referenced assets
+6. **Output Writer** — Writes pages, metadata, and assets to final directories
+
+See [Architecture](./architecture.html) for detailed stage descriptions and abstractions.
+
+## Extending the Pipeline
+
+The pipeline is designed to be extended without modifying core logic:
+
+- **New documentation format** (Docsify, Sphinx, Confluence cloud, etc.) → Add a [Parser](./extending-parsers.html)
+- **New source system** (S3, Confluence server, GitLab, etc.) → Add a [Connector](./extending-connectors.html)
+
+Both follow explicit interface contracts defined in the codebase and documented in their respective guides.
