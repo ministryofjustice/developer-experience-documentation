@@ -9,7 +9,7 @@ review_in: 6 months
 
 ## Purpose
 
-This document provides instructions for identifying and removing dormant GitHub users within the Ministry of Justice GitHub Enterprise. By following this runbook, the Developer Experience team can optimise the use of GitHub licenses, reduce unnecessary costs, and maintain security by ensuring only active users can access enterprise resources.
+This document provides instructions for identifying and removing dormant GitHub users within the Ministry of Justice GitHub Enterprise. By following this runbook, the Developer Experience team can optimise the use of GitHub licences, reduce unnecessary costs, and maintain security by ensuring only active users can access enterprise resources.
 
 ## Audience
 
@@ -19,28 +19,28 @@ This runbook is primarily for:
 
 ## What is a Dormant GitHub User?
 
-According to GitHub, A dormant GitHub user is an account that has not performed any activity within the last 30 days. The [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/managing-dormant-users) provides a detailed list of activities that define user activity.
+According to GitHub, a dormant GitHub user is an account that has not performed any activity within the last 30 days. The [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/managing-dormant-users) provides a detailed list of activities that define user activity.
 
-One of the challenges we face is that many services in the Digital space use GitHub as an identity provider to access their systems. Cloud Platform, Analytical Platform, and Modernisation Platform use Auth0 as an authentication mechanism to access various systems. 
+One challenge is that many of MoJ's Digital services e.g. Cloud Platform, Analytical Platform, and Modernisation Platform use GitHub as an identity provider (IdP) to access their systems via Auth0 as an authentication mechanism.
 
-As a result, there may be users who depend on access to our GitHub enterprise who would be flagged as dormant  when reviewing GitHub's dormant user report alone.
+As a result, some users who still depend on access to our GitHub enterprise can be flagged as dormant when reviewing GitHub's dormant user report alone.
 
-Previously, Auth0 logs were stored and cross-referenced with the GitHub dormant user report to get a more accurate gauge of user activity. This made for an overall complex process and is no longer in place. 
+Previously, Auth0 logs were stored and cross-referenced with the GitHub dormant user report to get a more accurate picture of user activity. This was a complex process and is no longer in place.
 
-The MoJ is starting to reduce it's dependency on GH as an IdP having adopted EntraID in recent years as another auth mechanism for our services which should in time draw down our use of GitHub as an IdP.
+MoJ is reducing its dependency on GitHub as an IdP and has adopted Entra ID in recent years as another authentication mechanism for our services. Over time, this should reduce our use of GitHub as an IdP.
 
-At present we do not have the capacity to cross reference the GH dormant user report with Auth0 logs but moving forward we plan to re-visit the whole process to make it more sophisticated and as automated as possible.
+At present, we do not have the capacity to cross-reference the GitHub dormant user report with Auth0 logs. Moving forward, we plan to revisit this process to make it more sophisticated and automated.
 
 ## Why Remove a Dormant GitHub User?
 
-Dormant users can incur unnecessary costs if they hold licenses that could otherwise be allocated to active team members or new users. Additionally, managing dormant users helps maintain security and compliance by reducing the number of potentially inactive accounts that could pose a security risk if compromised.
+Dormant users can incur unnecessary costs if they hold licences that could otherwise be allocated to active team members or new users. Additionally, managing dormant users helps maintain security and compliance by reducing the number of potentially inactive accounts that could pose a security risk if compromised.
 
 ## What's Required to Remove a Dormant GitHub User?
 
 To remove a dormant GitHub user, you will need:
 
 1. **Access to GitHub Enterprise:** Only enterprise owners or users with sufficient administrative privileges can generate the dormant user report in GitHub.
-1. **Access to GitHub Organisation:** Only organisation owners can remove users from an organisation
+1. **Access to a GitHub organisation:** Only organisation owners can remove users from an organisation.
 
 ## Identify Dormant GitHub Users
 
@@ -48,33 +48,32 @@ At present, removing a dormant GitHub user is a manual process. Follow these ste
 
 ### 1. Download the Dormant Users report from GitHub
 
-First, you need to generate and download the dormant user report from GitHub Enterprise (You need to be a GitHub Enterprise Owner to do this). Follow these steps:
+First, generate and download the dormant user report from GitHub Enterprise. You need to be a GitHub Enterprise owner to do this. Follow these steps:
 
 - Navigate to the [GitHub MoJ Enterprise](https://github.com/enterprises/ministry-of-justice-uk).
 - In the sidebar, click **Compliance**.
 - Scroll down to **Reports** and next to **Dormant Users**, click **New report** if a recent report is not already available.
 - Once the report is generated, click **Download** next to the latest dormant users report.
 
-### 2. Identify inactive users to remove 
+### 2. Identify inactive users to remove
 
-- Review the dormant user .csv file downloaded from GitHub to identify inactive users 
+- Review the dormant user CSV file downloaded from GitHub to identify inactive users.
 
- > Be aware of "Bot" accounts e.g. `slack-moj` which often show up in the report but should **NOT** be removed as they are likely supporting some form of automation (we need to investigate these further when making improvements)
+> Be aware of bot accounts, for example `slack-moj`. These often appear in the report but should **not** be removed, as they are likely supporting some form of automation.
 
- > It's best to remove accounts which more obviously belong to an individual i.e. contains a real name
+> Prioritise removing accounts that clearly belong to an individual, for example accounts containing a real name.
 
- > It's worth a quick sense check against each users' profile on GitHub at github.com/<`username`> to verify their inactivity
+> Do a quick sense check against each user's GitHub profile at `https://github.com/<username>` to verify inactivity.
 
 - Make a note of the usernames you are removing
 
-
 ### 3. Remove inactive users from the organisation
 
-- Navigate to the relevant GitHub [organisation](https://github.com/enterprises/ministry-of-justice-uk/organizations) the user is a member of e.g. [ministryofjustice](https://github.com/ministryofjustice) 
+- Navigate to the relevant GitHub [organisation](https://github.com/enterprises/ministry-of-justice-uk/organizations) the user is a member of, for example [ministryofjustice](https://github.com/ministryofjustice).
 - Select **People**
 - Enter the username of the identified dormant user in the search field
-- Click the checkbox next to the user and then click **1 member selected** 
-- Finally select **Remove from organization**
-- If the user is a member of multiple organizations then repeat the previous steps for each
+- Click the checkbox next to the user, then click **1 member selected**
+- Select **Remove from organization**
+- If the user is a member of multiple organisations, repeat these steps for each organisation.
 
 
