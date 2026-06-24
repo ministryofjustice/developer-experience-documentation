@@ -1,0 +1,216 @@
+---
+owner_slack: "#developer-experience-team"
+title: End-to-End Build and Release Runbook
+last_reviewed_on: 2026-06-15
+review_in: 12 months
+---
+
+# End-to-End Build and Release Runbook
+
+## Objective
+
+Implement a controlled, traceable release process that preserves rapid delivery to development while introducing approval gates and immutable release promotion for production deployments.
+
+This model uses existing GitHub Actions workflows and Release Please capabilities, with minimal additional tooling.
+
+## Expected Outcomes
+
+- Automatic deployment to development from `main`
+- Controlled production releases from approved SemVer tags
+- Automated versioning and changelog generation through Release Please
+- Release review via release pull requests
+- Security and quality validation concentrated on the release path
+- Production approval guardrails using GitHub Environment protection
+- Immutable versioned artifacts
+- End-to-end deployment traceability
+- Simple rollback using previously released tags
+
+## Current State (Retained)
+
+The following capabilities already exist and should be retained:
+
+| Component | Purpose |
+| --- | --- |
+| `release-please.yml` | Generates release PRs and GitHub releases from Conventional Commits |
+| `release-please-config.json` | Configures automated versioning and changelog generation |
+| `deploy-dev.yml` | Automatically deploys to development on pushes to `main` |
+| `unit-test.yml` | Runs automated tests on pull requests and merges |
+| `lint.yml` | Performs linting across branches |
+| `sca.yml` | Runs software composition analysis on schedule, pull requests, and manual execution |
+| `preview.yml` | Executes build and ingest validation during pull request review |
+
+This runbook focuses on controls needed for production release governance.
+
+## Target Release Model
+
+### Development Environment
+
+Development remains the fast-feedback environment.
+
+Every merge to `main` should:
+
+1. Run unit tests.
+2. Run linting.
+3. Perform build validation.
+4. Build a container image.
+5. Tag the image using the commit SHA.
+6. Push the image to the container registry.
+7. Automatically deploy to the development environment.
+
+Example image tag: `my-service:abc1234`
+
+No manual approvals are required for development deployments.
+
+## Release Management with Release Please
+
+Release Please remains the source of truth for versioning.
+
+### Version Determination
+
+Version numbers are calculated from Conventional Commits:
+
+| Commit Type | Version Increment |
+| --- | --- |
+| `fix:` | Patch |
+| `feat:` | Minor |
+| `feat!:` or breaking change | Major |
+
+Examples:
+
+- `fix: correct retry timeout` -> `v1.4.1`
+- `feat: add reporting endpoint` -> `v1.5.0`
+- `feat!: replace authentication mechanism` -> `v2.0.0`
+
+## Release Pull Request Process
+
+When changes accumulate on `main`, Release Please creates a release pull request containing:
+
+- Proposed version number
+- Generated changelog
+- Release notes
+- Included commits
+
+The release PR is the formal release review checkpoint.
+
+Before merging the release PR, reviewers should verify:
+
+- Release scope
+- Changelog accuracy
+- Production readiness
+- Security findings are addressed
+
+Approval of the release PR authorizes creation of a production candidate.
+
+## Release Validation Pipeline
+
+The release path should carry heavier quality and security controls, rather than slowing normal development deployments.
+
+When a release PR is created or updated, execute:
+
+### Quality Gates
+
+- Full linting
+- Formatting validation
+- Pre-commit hook execution
+- Unit tests
+- Build verification
+
+### Security Gates
+
+- Dependency vulnerability scanning
+- Software composition analysis (SCA)
+- Static application security testing (SAST)
+- Container image vulnerability scanning
+
+Release and tag creation must only proceed after all required CI jobs have completed successfully.
+
+The release job should explicitly depend on validation jobs, for example:
+
+- Unit tests
+- Linting
+- SCA/SAST
+- Build verification
+- Container scanning
+
+## Tag Creation and Image Versioning
+
+When an approved release PR is merged, Release Please automatically:
+
+1. Calculates the next version.
+2. Creates the Git tag.
+3. Creates the GitHub Release.
+4. Publishes release notes.
+
+Example tag: `v1.5.0`
+
+The release build should publish immutable images tagged with both:
+
+- `my-service:v1.5.0`
+- `my-service:abc1234`
+
+This provides traceability from Git tag to release notes to commit SHA to container image to deployment.
+
+## Production Deployment Controls
+
+Production deployments must never be triggered directly from `main`.
+
+Production deployments are only permitted from valid Semantic Version tags matching `vX.Y.Z`, for example `v1.5.0`.
+
+Production deployment must only run from a verified SemVer tag created by Release Please from the protected default branch.
+
+It must not allow deployment from arbitrary SHAs, branches, or manually entered commit references.
+
+## Production Approval Guardrail
+
+Use GitHub Environment protection for production approval.
+
+Configure the `prod` environment with:
+
+- Required reviewers
+- Deployment protection rules
+
+Suggested reviewers:
+
+- Service owner
+- Technical lead
+
+Deployment cannot proceed until approval is granted.
+
+## Production Deployment Process
+
+After environment approval:
+
+1. Verify release tag.
+2. Verify image exists in the registry.
+3. Verify image digest.
+4. Deploy the immutable SemVer-tagged image.
+5. Execute smoke tests.
+6. Confirm successful deployment.
+
+Production deployments should always reference a released version rather than a commit SHA alone.
+
+Example: `my-service:v1.5.0`
+
+## GitHub Actions Security Controls
+
+- Use least-privilege workflow permissions.
+- Grant `contents: write` only where tag or GitHub Release creation is required.
+- Use read-only permissions for other jobs where possible.
+- Make production deployment depend on a verified SemVer tag from the protected default branch.
+- Use explicit dependencies (for example `needs: [unit-test, lint, sca, build]`) so release and deployment jobs cannot bypass validation.
+- Scope release credentials and deployment permissions to minimum required access.
+
+## Rollback Strategy
+
+Rollback should use previously released SemVer tags, for example `v1.4.2`.
+
+Rollback process:
+
+1. Select a previously deployed release tag.
+2. Verify image availability.
+3. Obtain production approval through the GitHub Environment.
+4. Redeploy the immutable image.
+
+No rebuild should be required.
+
+This ensures predictable and auditable recovery.
