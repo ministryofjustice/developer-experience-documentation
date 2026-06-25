@@ -1,3 +1,10 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Documentation Ingestion Runbook
+last_reviewed_on: 2026-06-24
+review_in: 12 months
+---
+
 # Documentation Ingestion Runbook
 
 ## Review Dates

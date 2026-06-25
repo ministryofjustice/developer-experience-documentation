@@ -1,8 +1,29 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Add a runbook
+last_reviewed_on: 2026-06-24
+review_in: 12 months
+---
+
 # Add a runbook
 
 To add a new runbook:
 
 * Create a new `*.html.md.erb` file in the `source/runbooks` directory of this repository, containing the runbook information
+* Add frontmatter metadata at the top of the file using this template:
+
+```
+---
+owner_slack: "#developer-experience-alerts"
+title: <Runbook Title>
+last_reviewed_on: YYYY-MM-DD
+review_in: 12 months
+---
+```
+
+Use `#developer-experience-alerts` as the default `owner_slack` value unless an alternative channel has been explicitly agreed by the team.
+Use `review_in: 12 months` as the default review period unless a shorter review cadence is required.
+
 * Add a corresponding list item in the `source/index.html.md.erb` file under the title `Runbooks` title.
 
 ```
