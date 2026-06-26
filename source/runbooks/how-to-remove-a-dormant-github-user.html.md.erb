@@ -1,7 +1,7 @@
 ---
 owner_slack: "#developer-experience-alerts"
 title: How to Remove a Dormant GitHub User
-last_reviewed_on: 2026-06-23
+last_reviewed_on: 2026-06-26
 review_in: 6 months
 ---
 
@@ -19,17 +19,7 @@ This runbook is primarily for:
 
 ## What is a Dormant GitHub User?
 
-According to GitHub, a dormant GitHub user is an account that has not performed any activity within the last 30 days. The [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/managing-dormant-users) provides a detailed list of activities that define user activity.
-
-One challenge is that many MoJ Digital services, including Cloud Platform, Analytical Platform, and Modernisation Platform, still rely on GitHub SSO via Auth0 to access downstream systems.
-
-This means users can still be actively accessing services through Auth0 even when GitHub shows no recent activity, so the GitHub dormant user report alone could produce false positives.
-
-Previously, we reduced this risk by cross-referencing Auth0 logs with the GitHub dormant user report to build a more accurate picture of activity. That process is no longer in place.
-
-At present, we do not have the capacity to cross-reference these data sources, so this manual process is based on the GitHub dormant user report only.
-
-MoJ is reducing its dependency on GitHub-based SSO and has adopted Entra ID as an additional authentication method. Over time, this should reduce reliance on GitHub as the upstream identity source.
+According to GitHub, a dormant GitHub user is an account that has not performed any activity within the last 30 days. The [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/managing-dormant-users) provides a detailed list of activities that define user activity. There are some limitations to this definition, which are outlined in [GitHub SSO via Auth0](#github-sso-via-auth0).
 
 ## Why Remove a Dormant GitHub User?
 
@@ -63,17 +53,38 @@ First, generate and download the dormant user report from GitHub Enterprise. You
 
 > Prioritise removing accounts that clearly belong to an individual, for example accounts containing a real name.
 
-> Do a quick sense check against each user's GitHub profile at `https://github.com/<username>` to verify inactivity.
+> Do a quick sense check of each user's GitHub profile at `https://github.com/<username>`, but do not treat this as confirmation of inactivity.
 
-- Make a note of the usernames you are removing
+- Make a note of the usernames you are removing.
 
 ### 3. Remove inactive users from the organisation
 
 - Navigate to the relevant GitHub [organisation](https://github.com/enterprises/ministry-of-justice-uk/organizations) the user is a member of, for example [ministryofjustice](https://github.com/ministryofjustice).
-- Select **People**
-- Enter the username of the identified dormant user in the search field
-- Click the checkbox next to the user, then click **1 member selected**
-- Select **Remove from organization**
+- Select **People**.
+- Enter the username of the identified dormant user in the search field.
+- Click the checkbox next to the user, then click **1 member selected**.
+- Select **Remove from organization**.
 - If the user is a member of multiple organisations, repeat these steps for each organisation.
+
+## Known Issues and Limitations
+
+### User removed in error
+
+If a user is removed from the GitHub organisation in error, they can rejoin within [three months](https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-membership-in-your-organization/reinstating-a-former-member-of-your-organization#about-member-reinstatement) and retain their previous permissions. If the user has a `@justice.gov.uk` email address, they can rejoin via SSO using one of the following links:
+
+- [Ministry of Justice](https://github.com/orgs/ministryofjustice/sso)
+- [MoJ Analytical Services Organisation](https://github.com/orgs/moj-analytical-services/sso)
+
+### GitHub SSO via Auth0
+
+Many MoJ Digital services, including Cloud Platform, Analytical Platform, and Modernisation Platform, still rely on GitHub SSO via Auth0 to access downstream systems.
+
+This means users can still be actively accessing services through Auth0 even when GitHub shows no recent activity, so the GitHub dormant user report alone could produce false positives.
+
+Previously, we reduced this risk by cross-referencing Auth0 logs with the GitHub dormant user report to build a more accurate picture of activity. That process is no longer in place.
+
+At present, we do not have the capacity to cross-reference these data sources, so this manual process is based on the GitHub dormant user report only.
+
+MoJ is reducing its dependency on GitHub-based SSO and has adopted Entra ID as an additional authentication method. Over time, this should reduce reliance on GitHub as the upstream identity source.
 
 
