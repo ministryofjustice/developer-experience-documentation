@@ -46,12 +46,28 @@ make preview
 make package
 ```
 
+### Run CI-like local validation
+
+Run the same packaging entrypoint used in publish, unpack the deployable artifact,
+verify critical routes exist, check navigation links resolve to generated files,
+and run built-site link checking:
+
+```bash
+make ci-local
+```
+
 ### Check links
 
 This repo uses [Lychee](https://github.com/lycheeverse/lychee) in CI. To run link checks locally:
 
 ```bash
 make link-check
+```
+
+To check links in generated output (after `make package` + artifact unpack):
+
+```bash
+make link-check-built
 ```
 
 ## Publishing
