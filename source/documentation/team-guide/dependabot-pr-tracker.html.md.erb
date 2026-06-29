@@ -1,0 +1,120 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Dependabot PR tracker
+last_reviewed_on: 2026-06-26
+review_in: 6 months
+---
+
+# Dependabot PR Issue Tracking
+
+This page explains how the OCTO Developer Experience team uses the Dependabot PR tracker when managing Dependabot work across the team’s repositories.
+
+The [run-dependabot-pr-tracker](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/run-dependabot-pr-tracker.yml) triggers the [dependabot-pr-tracker workflow](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/dependabot-pr-tracker.yml) which inturn creates an issue for each repository the team manages, then populates project data so those issues are visible during Monday sprint planning. The goal is to give the team a single, current view of Dependabot work that needs attention before planning starts.
+
+## What the workflow does
+
+Use the tracker as the entry point for Dependabot work across the team-owned repositories.
+
+1. It reads the OCTO Developer Experience team’s repository list from the GitHub team repositories page.
+2. It creates one issue for each repository in scope (if open dependabot PRs exist).
+3. It populates project data so the issues appear in the planning view.
+4. It gives the team a shared set of items to review when sprint planning happens on Monday.
+
+This is not just a reporting workflow. It is the mechanism that turns the team’s Dependabot backlog into planning work the team can see and triage together.
+
+## Where the repository list comes from
+
+The repository list is managed on the GitHub team page for [OCTO Developer Experience repositories](https://github.com/orgs/ministryofjustice/teams/octo-developer-experience/repositories).
+
+In the wrapper workflow, the repo list is discovered with the GitHub API call to `orgs/ministryofjustice/teams/octo-developer-experience/repos`.
+
+If the team’s repository ownership changes, update the GitHub team membership first.
+
+## Repo to team mapping
+
+The repo-to-team mapping is done in [`.github/workflows/dependabot-pr-tracker.yml`](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/dependabot-pr-tracker.yml#L65) in the `case` statement that sets the project `Team` field. That mapping is then used when the workflow creates or updates the tracking issue for each repository.
+
+The current mapping is:
+
+| Repository | Project team field | Notes |
+| --- | --- | --- |
+| `developer-experience-documentation` | 👾 Engineering Portal | Documentation site |
+| `ministry-of-justice-developer-portal` | 👾 Engineering Portal | Developer portal |
+| `ministry-of-justice-tech-radar` | 👾 Engineering Portal | Tech radar |
+| `octo-access` | 👾 Engineering Portal | Access tooling |
+| `ministry-of-justice-engineering-platform` | 🔧 Engineering Platform | Main engineering platform repo |
+| `ministry-of-justice-github-analysis` | 🔧 Engineering Platform | GitHub analysis tooling |
+| `moj-github-discovery` | 🔧 Engineering Platform | Discovery tooling |
+| any other repository in scope | 🔧 Engineering Platform | Default fallback |
+
+The workflow adds the resulting issues to [👩‍💻 Developer Experience Team](https://github.com/orgs/ministryofjustice/projects/152), which is where the issues become visible for planning and triage.
+
+## When it runs
+
+The team’s sprints run for two weeks and start on a Monday. The wrapper workflow runs on Fridays at 09:25 Europe/London, but the `biweekly-gate` only lets the tracker continue on every second Friday relative to `ANCHOR_FRIDAY: "2026-05-08"` in [`.github/workflows/run-dependabot-pr-tracker.yml`](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/run-dependabot-pr-tracker.yml#L26).
+
+That timing matters because the active Friday run gives the team a fresh issue set before Monday planning. By the time planning starts, the created issues and their project data should already be visible to the team.
+
+Generally the team’s Dependabot updates are also configured in [`.github/dependabot.yml`](.https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/dependabot.yml) to run daily for GitHub Actions and devcontainers, so the tracker is working against a backlog that changes throughout the sprint.
+
+## How it behaves
+
+The workflow is meant to do the following:
+
+1. Read the team repository list from the GitHub team page.
+2. Create (if no open Dependabot tracking issues exist) or refresh one Dependabot tracking issue per repository.
+3. Add project data on [👩‍💻 Developer Experience Team](https://github.com/orgs/ministryofjustice/projects/152).
+4. Add a tracking comment to each open Dependabot PR that points back to the issue.
+5. Make the resulting work visible for Monday sprint planning.
+
+If the workflow is not run before planning, the team may be looking at stale Dependabot issues or missing repos that should be in scope.
+
+## Deferring unsuitable updates
+
+Some Dependabot updates should be deferred, for example a major upgrade to a non-LTS runtime or dependency that the team cannot safely adopt yet.
+
+When that happens, create a follow-up review issue with a target review date, normally 6 months ahead.
+
+Recommended process:
+
+1. Leave a clear comment on the Dependabot PR explaining why the update is being deferred.
+2. Create a new GitHub issue in the same repository with a title such as `Review deferred Dependabot update: <package> in <repo>`.
+3. Include in the issue body:
+	- link to the original PR
+	- decision summary (why deferred)
+	- risk or impact if unchanged
+	- set start date (for example, 6 months from decision date)
+	- explicit acceptance criteria for reopening or replacing the update
+4. Add the review issue to [👩‍💻 Developer Experience Team](https://github.com/orgs/ministryofjustice/projects/152).
+5. Set project fields so it appears in planning views, and mark it as a planned follow-up rather than immediate remediation.
+
+Note: the current tracker workflows create and update repository tracking issues for open Dependabot PRs, but they do not automatically create these deferred-decision review issues. This is a manual step today and should be done at triage time.
+
+## How to run it manually
+
+Use the [GitHub Actions](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/actions/workflows/run-dependabot-pr-tracker.yml) tab in the [Engineering Platform repo that](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform) contains the tracker workflows and run the manual workflow entry for the Dependabot tracker.
+
+The workflow exposes a `workflow_dispatch` trigger, so one can choose the manual run option, select the default branch, and start the job. This is the best option when you need to refresh the issue set before Monday planning or after a Dependabot burst.
+
+## Fields to review
+
+The workflow typically contains values that should be checked whenever the team’s repo scope or cadence changes:
+
+1. The repository list or repository patterns it loops over.
+2. The project or board it writes issue data into, currently [👩‍💻 Developer Experience Team](https://github.com/orgs/ministryofjustice/projects/152).
+3. The labels or owner fields it sets on the created issues.
+4. The `ANCHOR_FRIDAY` date used to align the schedule to the sprint boundary.
+5. Any default branch, environment, or token references used by manual runs.
+6. Associate GitHub App with relevant permissions used for authenticating the actions carried out by the scripts.
+
+If any of these values drift from the current team setup, the workflow can still run but the issues may not appear in the right place or at the right time for planning.
+
+## How ANCHOR_FRIDAY works
+
+`ANCHOR_FRIDAY` is the fixed Friday date the wrapper workflow uses as the reference point for its sprint-aligned schedule. On scheduled runs, the `biweekly-gate` compares the current Friday with that anchor and only allows the tracker to run when the number of whole weeks since the anchor is even, thereby running every two weeks.
+
+Review it when the sprint calendar changes or the reference date is no longer aligned to the current cadence. 
+Typical scenarios include:
+1. The sprint start day changes away from Monday.
+2. The sprint length changes away from two weeks.
+3. The workflow is copied to a different team or repository with a different planning cycle.
