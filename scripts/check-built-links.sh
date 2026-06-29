@@ -8,10 +8,45 @@ if [[ ! -d "$OUT_DIR" ]]; then
   exit 1
 fi
 
-if command -v lychee >/dev/null 2>&1; then
-  # Check generated html files for broken links in deployable output.
-  lychee --verbose --no-progress "$OUT_DIR/**/*.html" --accept 200,301,302,401,403,429
-else
-  echo "lychee not installed; skipping built-site link check"
-  echo "Install lychee to enable this check locally."
+# Validate only local artifact links (relative and root-relative).
+# External/canonical links are checked separately by source-level link checks.
+missing=0
+
+while IFS= read -r html_file; do
+  while IFS= read -r raw_url; do
+    url="$raw_url"
+
+    # Skip anchors and non-file schemes.
+    [[ -z "$url" || "$url" == \#* ]] && continue
+    [[ "$url" =~ ^(mailto:|tel:|javascript:|data:|https?://|//) ]] && continue
+
+    # Remove query string and fragment before filesystem checks.
+    url="${url%%\#*}"
+    url="${url%%\?*}"
+    [[ -z "$url" ]] && continue
+
+    if [[ "$url" == /* ]]; then
+      candidate="$OUT_DIR$url"
+    else
+      candidate="$(dirname "$html_file")/$url"
+    fi
+
+    if [[ "$candidate" == */ ]]; then
+      candidate="${candidate}index.html"
+    elif [[ ! -e "$candidate" && -d "$candidate" ]]; then
+      candidate="${candidate}/index.html"
+    fi
+
+    if [[ ! -e "$candidate" ]]; then
+      echo "Missing built link target: $url (from $html_file)"
+      missing=1
+    fi
+  done < <(grep -Eo '(href|src)="[^"]+"' "$html_file" | sed -E 's/^[^=]+="([^"]+)"/\1/' || true)
+done < <(find "$OUT_DIR" -type f -name '*.html' | sort)
+
+if [[ "$missing" -ne 0 ]]; then
+  echo "Built-site local link verification failed"
+  exit 1
 fi
+
+echo "Built-site local link verification passed"
