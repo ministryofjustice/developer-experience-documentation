@@ -37,12 +37,12 @@ jobs:
       - name: Verify Critical Routes
         id: verify_critical_routes
         run: |
-          bash scripts/verify-artifact.sh out config/critical-routes.txt
+          sh scripts/verify-artifact.sh out config/critical-routes.txt
 
       - name: Verify Navigation Links Resolve To Output
         id: verify_navigation_links
         run: |
-          bash scripts/verify-nav-links.sh out source/index.html.md.erb
+          sh scripts/verify-nav-links.sh out source/index.html.md.erb
 
       - name: Upload Built Site Snapshot
         id: upload_built_snapshot

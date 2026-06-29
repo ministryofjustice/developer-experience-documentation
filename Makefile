@@ -30,12 +30,12 @@ unpack-artifact:
 	tar -xf artifact.tar -C out
 
 verify-artifact:
-	bash scripts/verify-artifact.sh out config/critical-routes.txt
+	sh scripts/verify-artifact.sh out config/critical-routes.txt
 
 verify-nav-links:
-	bash scripts/verify-nav-links.sh out source/index.html.md.erb
+	sh scripts/verify-nav-links.sh out source/index.html.md.erb
 
 link-check-built:
-	bash scripts/check-built-links.sh out
+	sh scripts/check-built-links.sh out
 
 ci-local: package unpack-artifact verify-artifact verify-nav-links link-check-built

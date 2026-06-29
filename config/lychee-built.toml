@@ -1,0 +1,17 @@
+# Built-site link checks should validate local artifact links deterministically.
+# This avoids false failures against pre-deploy production URLs.
+verbose = "info"
+no_progress = true
+root_dir = "out"
+base_url = "https://ministryofjustice.github.io/developer-experience-documentation/"
+accept = [200, 301, 302, 401, 403, 429]
+
+# Ignore non-actionable or environment-dependent links for local artifact checks.
+exclude = [
+  "^mailto:",
+  "^https://ministryofjustice.github.io/",
+  "^https://www.google.co.uk/search",
+  "^https://github.com/.*/settings/.*",
+  "^https://api.github.com/.*",
+  "^https://manage.auth0.com/.*"
+]
