@@ -2,6 +2,6 @@
 # Add any route that previously 404'd to this permanent regression list.
 
 index.html
-documentation/team-guide/dependabot-pr-tracker.html
+documentation/team-guide/dependabot-pr-tracking.html
 documentation/team-guide/team-tools.html
 documentation/team-guide/useful-scripts.html
