@@ -50,7 +50,7 @@ while IFS= read -r html_file; do
         candidate="${candidate}index.html"
         ;;
       *)
-        if [ ! -e "$candidate" ] && [ -d "$candidate" ]; then
+        if [ -d "$candidate" ]; then
           candidate="${candidate}/index.html"
         fi
         ;;
