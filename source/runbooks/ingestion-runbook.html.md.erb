@@ -269,7 +269,7 @@ ls -1 <CONTENT_OUTPUT_DIR>
 find <CONTENT_OUTPUT_DIR> -name "_meta.json"
 
 # Check unresolved ERB markers after conversion
-rg "<%|%>" <CONTENT_OUTPUT_DIR>
+rg "<[%]|%>" <CONTENT_OUTPUT_DIR>
 ```
 
 ## Rollback

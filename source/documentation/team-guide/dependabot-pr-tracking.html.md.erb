@@ -1,15 +1,15 @@
 ---
 owner_slack: "#developer-experience-alerts"
-title: Dependabot PR tracker
+title: Dependabot PR Tracking
 last_reviewed_on: 2026-06-26
 review_in: 6 months
 ---
 
-# Dependabot PR Issue Tracking
+# Dependabot PR Tracking
 
 This page explains how the OCTO Developer Experience team uses the Dependabot PR tracker when managing Dependabot work across the team’s repositories.
 
-The [run-dependabot-pr-tracker workflow](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/run-dependabot-pr-tracker.yml) triggers the [dependabot-pr-tracker workflow](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/dependabot-pr-tracker.yml) which inturn creates an issue for each repository the team manages, then populates project data so those issues are visible during Monday sprint planning. The goal is to give the team a single, current view of Dependabot work that needs attention before planning starts.
+The [run-dependabot-pr-tracker workflow](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/run-dependabot-pr-tracker.yml) triggers the [dependabot-pr-tracker workflow](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/blob/main/.github/workflows/dependabot-pr-tracker.yml), which in turn creates an issue for each repository the team manages, then populates project data so those issues are visible during Monday sprint planning. The goal is to give the team a single, current view of Dependabot work that needs attention before planning starts.
 
 ## What the workflow does
 
