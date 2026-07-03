@@ -1,0 +1,117 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Repository and Content Structure for Documentation Sites
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Repository and Content Structure for Documentation Sites
+
+Use this page when structuring a documentation site that will be published through the Developer Portal.
+
+## Recommended repository layout
+
+Use a clear docs-as-code layout for documentation repositories, with content separated by purpose.
+
+Example:
+
+```text
+repo-root/
+  content/
+    docs/
+    products/
+    guidelines/
+    runbooks/
+    apis/
+  scripts/
+  .github/workflows/
+  README.md
+```
+
+```mermaid
+flowchart TB
+    A[Repository root] --> B[content/]
+    A --> C[scripts/]
+    A --> D[.github/workflows/]
+    B --> E[docs/]
+    B --> F[products/]
+    B --> G[guidelines/]
+    B --> H[runbooks/]
+    B --> I[apis/]
+```
+
+## Folder structure guidance
+
+1. Group user-facing content by domain (products, guidelines, runbooks, APIs).
+2. Keep generated artifacts separate from authored source files.
+3. Keep assets close to related content where possible.
+
+Additional guidance:
+
+1. Keep one clear responsibility per top-level content folder.
+2. Avoid deep nested paths unless needed for navigation clarity.
+3. Store shared images and diagrams in a predictable location.
+
+## Naming conventions
+
+1. Use lowercase kebab-case for file names.
+2. Keep URLs predictable and stable.
+3. Prefer concise names that reflect user intent.
+
+File naming rules:
+
+1. Prefer `verb-noun` or `noun-purpose` patterns.
+2. Avoid ambiguous names like `misc` or `notes`.
+3. Keep names stable to reduce broken links.
+
+Examples:
+
+1. `getting-started.md`
+2. `api-authentication.md`
+3. `incident-response-runbook.md`
+
+## Metadata requirements
+
+Each page should include frontmatter where supported.
+
+Minimum recommended metadata:
+
+1. `title`
+2. `description`
+3. `last_reviewed_on`
+4. `owner` or `owner_slack`
+
+Recommended optional fields:
+
+1. `review_in`
+2. `tags`
+3. `audience`
+4. `status`
+
+Example:
+
+```yaml
+---
+title: API Authentication
+description: How to authenticate against the Payments API
+last_reviewed_on: 2026-07-03
+owner: payments-platform-team
+---
+```
+
+## URL and routing consistency
+
+1. The published URL should map cleanly to the source file path.
+2. Do not rename files unless necessary.
+3. If a rename is required, add a migration note in related docs.
+
+## Structure validation flow
+
+```mermaid
+flowchart TB
+  A[Create page file] --> B[Apply naming conventions]
+  B --> C[Add required metadata]
+  C --> D[Place in correct content folder]
+  D --> E[Link from index/navigation]
+  E --> F[Run local checks]
+```

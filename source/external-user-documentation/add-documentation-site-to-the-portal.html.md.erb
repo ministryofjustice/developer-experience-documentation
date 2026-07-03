@@ -1,0 +1,142 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Add a Documentation Site to the Portal
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Add a Documentation Site to the Portal
+
+Use this guide when onboarding a new technical documentation site into the Developer Portal.
+
+## Supported ingestion formats
+
+The Developer Portal ingestion pipeline currently supports documentation content in Markdown and template-documentation-site style structures.
+
+If you need ingestion for any other content format, contact the Developer Experience team before onboarding.
+
+## Onboarding flow
+
+```mermaid
+flowchart TB
+    A[Create or identify source documentation repository] --> B[Adopt template-documentation-site structure]
+    B --> C[Prepare content and metadata]
+    C --> D[Validate locally and in PR]
+    D --> E[Add source entry to portal ingestion config]
+    E --> F[Run ingestion workflow]
+    F --> G[Verify docs pages in portal and search]
+```
+
+## Step 1: Prepare source documentation repository
+
+1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site) where possible.
+2. Ensure repository contains clear docs structure and ownership metadata.
+3. Confirm pages are externally suitable (no internal-only content leakage).
+
+## Beginner-friendly quick setup guidance
+
+If you are new to documentation publishing, use this simple approach:
+
+1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
+2. Follow the setup steps in that repository without changing advanced configuration first.
+3. Replace template example content with your real guidance.
+4. Organise pages by user need (for example: getting started, how-to, troubleshooting).
+5. Add ownership details so users know who maintains each page.
+6. Ask a teammate to do a readability review before raising your PR.
+
+For non-technical contributors:
+
+1. Focus on clear user outcomes and plain language.
+2. Avoid internal acronyms unless they are explained.
+3. Use short sections, clear headings, and checklists.
+4. Keep examples realistic and task-based.
+
+## Common onboarding mistakes to avoid
+
+1. Publishing without page ownership metadata.
+2. Using internal-only language in external-facing docs.
+3. Writing steps that assume engineering background without explanation.
+4. Linking to files that are not part of published output.
+5. Publishing content without asking a representative user to review clarity.
+
+## Pre-publish quality checks
+
+Before opening a PR:
+
+1. Preview pages using the repository's documented local preview method.
+2. Run the repository's link validation checks.
+3. Check headings and page order are easy to follow.
+4. Confirm terminology is understandable to non-technical readers.
+
+## Step 2: Validate documentation quality
+
+In the source docs repository, run the local preview and link validation steps documented in that repository.
+
+Before portal onboarding, confirm:
+
+1. Pages render correctly.
+2. Links are valid.
+3. Navigation and headings are consistent.
+
+## Step 3: Configure portal ingestion source
+
+In the Developer Portal repository (`ministry-of-justice-developer-portal`):
+
+1. Add a new source entry in `sources.json`.
+2. Set source identifier and repository URL.
+3. Set format and content path mapping.
+4. Enable the source entry.
+
+Example shape (illustrative):
+
+```json
+{
+  "id": "example-docs",
+  "repo": "https://github.com/ministryofjustice/example-docs",
+  "enabled": true,
+  "format": "tech-docs"
+}
+```
+
+## Step 4: Run ingestion and build validation
+
+In the Developer Portal repository:
+
+```bash
+npm run ingest
+npm run build
+```
+
+Optional dry run where supported:
+
+```bash
+npm run ingest:dry-run
+```
+
+## Step 5: Verify portal output
+
+1. Confirm pages appear under expected portal routes.
+2. Confirm headings, links, and assets render correctly.
+3. Confirm search results include new pages.
+4. Confirm navigation includes the new documentation source where expected.
+
+## Step 6: Go-live checklist
+
+1. Source owner and support contact are documented.
+2. Review cadence is defined.
+3. Deprecation/offboarding path is documented.
+4. Stakeholders have approved publication.
+
+## Troubleshooting
+
+### Source content does not appear
+
+1. Confirm source entry is enabled.
+2. Confirm ingestion workflow completed successfully.
+3. Confirm repository path and format are correct.
+
+### Broken images or links
+
+1. Confirm asset paths are valid after ingestion.
+2. Confirm relative links are correct for published routes.
+3. Re-run link validation in both source and portal repositories.

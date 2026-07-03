@@ -1,0 +1,103 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Publishing and Ingestion Flow
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Publishing and Ingestion Flow
+
+## How content is synced into the portal
+
+At a high level:
+
+1. Content changes are merged in source repositories.
+2. Validation/build workflows run.
+3. Ingestion jobs pull source content and transform it.
+4. Updated content is published and searchable in the portal.
+
+```mermaid
+flowchart TB
+	A[Contributor updates source content] --> B[PR validation workflows]
+	B --> C[Merge to main]
+	C --> D[Build and publish workflows]
+	D --> E[Ingestion pipeline fetches and transforms content]
+	E --> F[Portal serves updated pages]
+	F --> G[Search index reflects new content]
+```
+
+## Required workflows and triggers
+
+Exact workflows vary by repository, but contributors should expect:
+
+1. Pull request validation on opened/updated PRs.
+2. Merge-triggered build/publish workflows on `main`.
+3. Scheduled/manual ingestion workflows where configured.
+
+Contributor expectation by stage:
+
+1. PR stage: content quality and structure checks.
+2. Merge stage: publish and deployment automation.
+3. Post-merge stage: ingestion verification and user-facing validation.
+
+## Validation and preview process
+
+Before merging:
+
+1. Preview docs locally.
+2. Run link checks.
+3. Confirm examples and navigation work.
+
+Recommended pre-merge checklist:
+
+1. Open changed pages in local preview.
+2. Validate links and heading structure.
+3. Validate command snippets and examples.
+4. Confirm cross-links to related docs work.
+
+Template-based local checks:
+
+1. Run the template repository's local preview workflow.
+2. Run the template repository's link validation checks.
+
+## Post-merge verification
+
+1. Confirm workflow run succeeded.
+2. Open updated portal pages and verify rendering.
+3. Verify search results include new or updated terms.
+4. Confirm any index or navigation references appear correctly.
+
+## Troubleshooting common issues
+
+### Content not appearing
+
+1. Confirm change is merged to the expected branch.
+2. Confirm publish/ingestion workflow completed successfully.
+3. Confirm file paths and metadata are valid.
+4. Confirm source repository is included in ingestion configuration.
+
+### Broken links
+
+1. Run local link checks.
+2. Fix relative paths and anchor references.
+3. Verify external target URLs are still valid.
+4. Confirm moved/renamed files are reflected in index pages.
+
+### Page renders incorrectly
+
+1. Check markdown structure and frontmatter.
+2. Validate code fences and embedded HTML.
+3. Compare against template examples.
+
+## Troubleshooting decision flow
+
+```mermaid
+flowchart TB
+	A[Issue detected in portal docs] --> B{Content missing or visible?}
+	B -->|Missing| C[Check merge and workflow status]
+	B -->|Visible but broken| D[Check links and markdown structure]
+	C --> E[Check ingestion config and source path]
+	D --> F[Fix source content and open PR]
+	E --> F
+	F --> G[Re-validate and confirm in portal]
+```

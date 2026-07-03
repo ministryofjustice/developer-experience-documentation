@@ -1,0 +1,96 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Documentation Ownership
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Documentation Ownership
+
+## Ownership expectations
+
+1. Every documentation change should be reviewed by a content owner or delegated reviewer.
+2. High-impact pages should have at least one domain reviewer.
+3. Significant behavioral changes should be reviewed with platform/DevX stakeholders.
+
+Review depth guidance:
+
+1. Minor edits: single owner review.
+2. Structural or process changes: owner + domain reviewer.
+3. High-impact operational/security guidance: owner + domain + platform reviewer.
+
+## Ownership model
+
+Each page should have a named owner (team or role) responsible for:
+
+1. Accuracy.
+2. Timely updates.
+3. Responding to feedback and issues.
+
+Suggested ownership model:
+
+1. One accountable owner per page.
+2. At least one backup maintainer per content area.
+3. Ownership listed in metadata and team records.
+
+Recommended ownership fields:
+
+1. `owner` or `owner_slack`
+2. `last_reviewed_on`
+3. `review_in`
+
+## Shared responsibility model
+
+Documentation quality and availability are a shared responsibility between the Developer Portal team and the content owner team.
+
+### Developer Portal team responsibilities
+
+1. Maintain ingestion, build, and publishing pipelines for supported documentation formats.
+2. Keep portal navigation, routing, and search infrastructure healthy.
+3. Communicate platform-level ingestion or publishing changes that affect contributors.
+4. Provide support and triage for portal-level failures.
+
+### Content owner responsibilities
+
+1. Keep content accurate, complete, and up to date.
+2. Maintain page metadata, ownership details, and review cadence.
+3. Validate links, examples, and structure before merge.
+4. Respond to user feedback and fix content defects quickly.
+
+### Joint responsibilities
+
+1. Coordinate rollout for high-impact or structural content changes.
+2. Confirm post-merge visibility and correctness in the published portal.
+3. Agree migration and deprecation paths for retired content.
+
+## Update and deprecation lifecycle
+
+When content changes:
+
+1. Update page details and examples.
+2. Update review metadata.
+3. Confirm any related links and references.
+
+When content is deprecated:
+
+1. Mark as deprecated with guidance to replacement content.
+2. Keep migration path clear for users.
+3. Remove only after replacement has been stable and communicated.
+
+```mermaid
+flowchart TB
+	A[Content created] --> B[Owner assigned]
+	B --> C[Periodic review due]
+	C --> D{Still accurate?}
+	D -->|Yes| E[Update review date]
+	D -->|No| F[Revise or deprecate]
+	F --> G[Publish replacement or migration guidance]
+	G --> H[Retire old content]
+```
+
+## Operational guidance for maintainers
+
+1. Maintain a regular review cadence.
+2. Track recurring user questions and feed them into docs updates.
+3. Prefer small, frequent updates over large infrequent rewrites.
+

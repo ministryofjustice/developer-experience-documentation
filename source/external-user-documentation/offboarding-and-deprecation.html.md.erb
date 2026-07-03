@@ -1,0 +1,65 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Documentation Offboarding
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Documentation Offboarding
+
+Use this guidance when a documentation source, content area, or documentation site is being retired or removed from the Developer Portal.
+
+## When to offboard
+
+Typical triggers:
+
+1. Product/service is decommissioned.
+2. Documentation source repository is no longer maintained.
+3. Content is replaced by a new canonical source.
+4. Team ownership has ended and no successor owner is assigned.
+
+## Offboarding outcomes
+
+1. Users are not left with broken links.
+2. Replacement content is clearly signposted where available.
+3. Portal navigation and search do not surface stale pages.
+4. Ownership and support references are removed or updated.
+
+## Offboarding flow
+
+```mermaid
+flowchart TB
+    A[Identify offboarding need] --> B[Confirm owner and approval]
+    B --> C[Decide replacement or retirement path]
+    C --> D[Plan deprecation notice and migration links]
+    D --> E[Update navigation and references]
+    E --> F[Remove or archive source content]
+    F --> G[Run validation and publish]
+    G --> H[Monitor for broken links and user feedback]
+```
+
+## Checklist: offboarding a content area
+
+1. Confirm accountable owner for the offboarding change.
+2. Identify impacted pages and inbound links.
+3. Publish a clear deprecation notice with timeline.
+4. Link users to replacement content (if any).
+5. Update all indexes/navigation pages.
+6. Remove stale page links from related docs.
+7. Run local and CI validation checks.
+8. Verify published portal pages and search results.
+
+## Checklist: offboarding a full documentation site from portal ingestion
+
+1. Confirm business/product decision and owner approval.
+2. Remove or disable source in ingestion configuration.
+3. Remove site references from contributor/onboarding docs.
+4. Remove generated links from index and navigation pages.
+5. Ensure redirects or migration notes exist for high-traffic pages.
+6. Verify no broken local links remain after build.
+
+## Validation checks
+
+1. Build the documentation output using the repository's standard build workflow.
+2. Verify navigation links in the generated output.
+3. Run built-site link checking before publishing.
