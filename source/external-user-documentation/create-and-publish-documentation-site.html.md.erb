@@ -32,14 +32,14 @@ flowchart TB
 
 1. Create a new repository using the template.
 2. Follow template setup instructions in the README.
-3. Remove sample pages you do not need.
+3. Update the `CODEOWNERS` file in your repository so review requests go to the correct team.
+4. Remove sample pages you do not need.
 
 ## Step 2: Prepare user-focused content
 
-1. Organise content by user task (getting started, how-to, troubleshooting).
-2. Use plain language and explain acronyms.
-3. Add ownership metadata on pages.
-4. Keep page names clear and descriptive.
+1. Use plain language and explain acronyms.
+2. Add ownership metadata on pages.
+3. Keep page names clear and descriptive.
 
 ## Step 3: Validate before PR
 
@@ -49,9 +49,9 @@ flowchart TB
 
 ## Step 4: Publish through the Developer Portal
 
-1. Add or confirm the source entry in portal ingestion configuration.
-2. Run ingestion and build workflows in the Developer Portal repository.
-3. Confirm pages render correctly and appear in search.
+1. Add or confirm the source entry in portal onboarding configuration (`sources.json`) using [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
+2. Raise a pull request in the Developer Portal repository to add your source entry, following [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
+3. Confirm pages render correctly and appear in search using checks from the [Documentation Content Management Runbook](../runbooks/documentation-content-management-runbook.html) and [Test Suite Runbook](../runbooks/testing-developer-portal.html).
 
 ## Common mistakes to avoid
 
@@ -67,4 +67,4 @@ If your documentation source needs a non-standard format or special ingestion su
 ## Related pages
 
 1. [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html)
-2. [Publishing and Ingestion Flow](./publishing-and-ingestion-flow.html)
+

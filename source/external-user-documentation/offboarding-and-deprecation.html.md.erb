@@ -52,11 +52,14 @@ flowchart TB
 ## Checklist: offboarding a full documentation site from portal ingestion
 
 1. Confirm business/product decision and owner approval.
-2. Remove or disable source in ingestion configuration.
+2. Edit `sources.json` in `ministryofjustice/ministry-of-justice-developer-portal` and remove the source entry or set `enabled` to `false`.
 3. Remove site references from contributor/onboarding docs.
 4. Remove generated links from index and navigation pages.
 5. Ensure redirects or migration notes exist for high-traffic pages.
 6. Verify no broken local links remain after build.
+7. Raise a pull request in `ministryofjustice/ministry-of-justice-developer-portal` with the offboarding changes.
+8. Request review by posting the PR in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8) and include impact notes.
+9.
 
 ## Validation checks
 

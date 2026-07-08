@@ -7,64 +7,22 @@ review_in: 6 months
 
 # External User Documentation
 
-## Who this is for
+This section is for teams publishing documentation to the Developer Portal.
+- [Getting Started](./getting-started.html)
+- Create a new documentation site - [Create and Publish a Documentation Site](./create-and-publish-documentation-site.html)
+- Add an existing documentation repo to the portal - [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html)
+- Maintain ownership and quality over time - [Documentation Ownership](./governance-and-ownership.html)
+- Offboard content safely when it is no longer needed- [Documentation Offboarding](./offboarding-and-deprecation.html)
 
-1. Engineers and technical writers publishing docs for platform users.
-2. Service teams onboarding product, API, guideline, or runbook content.
-3. Reviewers and content owners responsible for quality and lifecycle management.
 
-## End-to-end contributor journey
+## Before you open a PR
 
-```mermaid
-flowchart TB
-	A[Read Getting Started guidance] --> B[Plan content using structure standards]
-	B --> C[Draft content using templates]
-	C --> D[Apply writing and accessibility standards]
-	D --> E[Run preview and link validation]
-	E --> F[Open pull request]
-	F --> G[Review and ownership checks]
-	G --> H[Merge and publish]
-```
+1. Make sure the content is written for all users.
+2. Confirm ownership details are present (`owner_slack` and `CODEOWNERS`), and review [Documentation Ownership](./governance-and-ownership.html).
+3. Run preview and link checks in your docs repository.
 
-## Start here
+## Template repository
 
-1. [Getting Started](./getting-started.html)
-2. [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html)
-3. [Repository and Content Structure](./repository-and-content-structure.html)
-4. [Publishing and Ingestion Flow](./publishing-and-ingestion-flow.html)
-5. [Templates and Examples](./templates-and-examples.html)
-6. [Documentation Ownership](./governance-and-ownership.html)
-7. [Documentation Offboarding](./offboarding-and-deprecation.html)
-8. [Create and Publish a Documentation Site](./create-and-publish-documentation-site.html)
+Use the MoJ template when starting a new site:
 
-## How to use this section
-
-1. New contributors should read pages in the listed order.
-2. Experienced contributors can jump straight to Templates and Publishing flow.
-3. Reviewers should focus on publishing flow, templates, and ownership guidance.
-
-## Minimum publishing readiness checklist
-
-1. Content follows the repository structure and naming conventions.
-2. Page metadata is complete and owner is clearly set.
-3. Writing style is task-oriented and externally understandable.
-4. Diagrams and images have sufficient context and accessibility support.
-5. Local preview and link checks pass.
-6. PR has reviewer sign-off from the owning team.
-
-## Recommended documentation template
-
-For teams creating a documentation site, use the MoJ template repository:
-
-- [ministryofjustice/template-documentation-site](https://github.com/ministryofjustice/template-documentation-site)
-
-This is the recommended baseline because it:
-
-1. Uses GOV.UK technical docs patterns.
-2. Supports local preview workflows.
-3. Supports link validation workflows.
-4. Provides a familiar structure for docs-as-code workflows.
-
-## Related references
-
-1. [Template documentation site](https://github.com/ministryofjustice/template-documentation-site)
+1. [ministryofjustice/template-documentation-site](https://github.com/ministryofjustice/template-documentation-site)

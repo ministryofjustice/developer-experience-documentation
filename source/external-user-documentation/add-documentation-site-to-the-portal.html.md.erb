@@ -11,132 +11,69 @@ Use this guide when onboarding a new technical documentation site into the Devel
 
 ## Supported ingestion formats
 
-The Developer Portal ingestion pipeline currently supports documentation content in Markdown and template-documentation-site style structures.
+The Developer Portal ingestion pipeline currently supports documentation content in Markdown and [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site) style structures.
 
-If you need ingestion for any other content format, contact the Developer Experience team before onboarding.
+If you need support for any other content format, contact the Developer Experience team.
 
-## Onboarding flow
+## Step 1: Prepare your documentation repository
 
-```mermaid
-flowchart TB
-    A[Create or identify source documentation repository] --> B[Adopt template-documentation-site structure]
-    B --> C[Prepare content and metadata]
-    C --> D[Validate locally and in PR]
-    D --> E[Add source entry to portal ingestion config]
-    E --> F[Run ingestion workflow]
-    F --> G[Verify docs pages in portal and search]
-```
+Choose one of these paths:
 
-## Step 1: Prepare source documentation repository
+1. Create a new repository from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
+2. Use an existing repository that already publishes documentation in Markdown.
 
-1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site) where possible.
-2. Ensure repository contains clear docs structure and ownership metadata.
-3. Confirm pages are externally suitable (no internal-only content leakage).
+Before raising a request, make sure:
 
-## Beginner-friendly quick setup guidance
+1. Your content is clear for all users.
+2. Links and navigation work.
+3. There is an owning team/contact for the documentation.
 
-If you are new to documentation publishing, use this simple approach:
+## Step 2: Raise a pull request to add your site
 
-1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
-2. Follow the setup steps in that repository without changing advanced configuration first.
-3. Replace template example content with your real guidance.
-4. Organise pages by user need (for example: getting started, how-to, troubleshooting).
-5. Add ownership details so users know who maintains each page.
-6. Ask a teammate to do a readability review before raising your PR.
+In [ministryofjustice/ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal):
 
-For non-technical contributors:
+1. Create a branch for your onboarding change.
+2. Update `sources.json` in that branch.
+3. Open a pull request from your branch to `main`.
+4. Use a clear title, for example: `Add <your-team-docs-repo> to Developer Portal`.
+5. Include the repository URL, source format (template-documentation-site or Markdown), owning team, and expected portal section/category.
+6. Post the PR in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8) for review.
 
-1. Focus on clear user outcomes and plain language.
-2. Avoid internal acronyms unless they are explained.
-3. Use short sections, clear headings, and checklists.
-4. Keep examples realistic and task-based.
+### Add your source in sources.json
 
-## Common onboarding mistakes to avoid
+To add a new documentation source, update:
 
-1. Publishing without page ownership metadata.
-2. Using internal-only language in external-facing docs.
-3. Writing steps that assume engineering background without explanation.
-4. Linking to files that are not part of published output.
-5. Publishing content without asking a representative user to review clarity.
+1. [sources.json in ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal/blob/feat/product-catalog-sbom-report/sources.json)
 
-## Pre-publish quality checks
+Use the existing entries in that file as your template.
 
-Before opening a PR:
+Relevant fields for a new source entry:
 
-1. Preview pages using the repository's documented local preview method.
-2. Run the repository's link validation checks.
-3. Check headings and page order are easy to follow.
-4. Confirm terminology is understandable to non-technical readers.
+1. `id` (required): unique slug for your source, for example `my-service-docs`.
+2. `name` (required): display name shown in the portal.
+3. `description` (required): short summary of what the documentation covers.
+4. `category` (required): section in the portal (for example `platform` or `documentation`).
+5. `repo` (required): GitHub repository in `owner/repo` format.
+6. `branch` (required): source branch, usually `main`.
+7. `docsPath` (required): folder path inside your repository where docs live.
+8. `format` (required): content format, typically `tech-docs-template` or `markdown`.
+9. `enabled` (required): set to `true` when ready to include the source.
+10. `owner_slack` (recommended): support channel for ownership/contact.
+11. `navGrouping` (optional): advanced navigation grouping used by some sources.
 
-## Step 2: Validate documentation quality
+If you are not sure about `category`, `docsPath`, or `format`, ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8) before opening the PR.
 
-In the source docs repository, run the local preview and link validation steps documented in that repository.
+## Step 3: Wait for review and merge
 
-Before portal onboarding, confirm:
+1. The Developer Experience team reviews your PR.
+2. You respond to feedback and update the PR if needed.
+3. Once approved, the PR is merged and your documentation is added to the portal.
 
-1. Pages render correctly.
-2. Links are valid.
-3. Navigation and headings are consistent.
+## What happens after your PR is merged
 
-## Step 3: Configure portal ingestion source
+1. Developer Portal workflows run to pick up your source.
+2. Your documentation appears in the portal navigation/category agreed in the PR.
+3. Search indexing updates and your new pages become discoverable.
+4. If anything looks wrong, raise a follow-up PR with fixes or ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).
 
-In the Developer Portal repository (`ministry-of-justice-developer-portal`):
 
-1. Add a new source entry in `sources.json`.
-2. Set source identifier and repository URL.
-3. Set format and content path mapping.
-4. Enable the source entry.
-
-Example shape (illustrative):
-
-```json
-{
-  "id": "example-docs",
-  "repo": "https://github.com/ministryofjustice/example-docs",
-  "enabled": true,
-  "format": "tech-docs"
-}
-```
-
-## Step 4: Run ingestion and build validation
-
-In the Developer Portal repository:
-
-```bash
-npm run ingest
-npm run build
-```
-
-Optional dry run where supported:
-
-```bash
-npm run ingest:dry-run
-```
-
-## Step 5: Verify portal output
-
-1. Confirm pages appear under expected portal routes.
-2. Confirm headings, links, and assets render correctly.
-3. Confirm search results include new pages.
-4. Confirm navigation includes the new documentation source where expected.
-
-## Step 6: Go-live checklist
-
-1. Source owner and support contact are documented.
-2. Review cadence is defined.
-3. Deprecation/offboarding path is documented.
-4. Stakeholders have approved publication.
-
-## Troubleshooting
-
-### Source content does not appear
-
-1. Confirm source entry is enabled.
-2. Confirm ingestion workflow completed successfully.
-3. Confirm repository path and format are correct.
-
-### Broken images or links
-
-1. Confirm asset paths are valid after ingestion.
-2. Confirm relative links are correct for published routes.
-3. Re-run link validation in both source and portal repositories.
