@@ -1,7 +1,7 @@
 ---
 owner_slack: "#developer-experience-alerts"
 title: Add a Documentation Site to the Portal
-last_reviewed_on: 2026-07-03
+last_reviewed_on: 2026-07-09
 review_in: 6 months
 ---
 
@@ -13,8 +13,6 @@ Use this guide when onboarding a new technical documentation site into the Devel
 
 The Developer Portal ingestion pipeline currently supports documentation content in Markdown and [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site) style structures.
 
-If you need support for any other content format, contact the Developer Experience team.
-
 ## Step 1: Prepare your documentation repository
 
 Choose one of these paths:
@@ -24,7 +22,7 @@ Choose one of these paths:
 
 Before raising a request, make sure:
 
-1. Your content is clear for all users.
+1. Your content is clear for all users and suitable for public publication.
 2. Links and navigation work.
 3. There is an owning team/contact for the documentation.
 
@@ -43,7 +41,7 @@ In [ministryofjustice/ministry-of-justice-developer-portal](https://github.com/m
 
 To add a new documentation source, update:
 
-1. [sources.json in ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal/blob/feat/product-catalog-sbom-report/sources.json)
+1. [sources.json in ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal/blob/main/sources.json)
 
 Use the existing entries in that file as your template.
 
@@ -71,7 +69,7 @@ If you are not sure about `category`, `docsPath`, or `format`, ask in [#ask-deve
 
 ## What happens after your PR is merged
 
-1. Developer Portal workflows run to pick up your source.
+1. Developer Portal workflows run to pick up your source. This is not an immediate auto-refresh yet, so updates may take time to appear.
 2. Your documentation appears in the portal navigation/category agreed in the PR.
 3. Search indexing updates and your new pages become discoverable.
 4. If anything looks wrong, raise a follow-up PR with fixes or ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).

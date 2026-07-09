@@ -1,7 +1,7 @@
 ---
 owner_slack: "#developer-experience-alerts"
 title: Create and Publish a Documentation Site
-last_reviewed_on: 2026-07-03
+last_reviewed_on: 2026-07-09
 review_in: 6 months
 ---
 
@@ -12,8 +12,7 @@ Use this page for a complete, user-friendly path to create and publish a documen
 ## Recommended starting point
 
 1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
-2. Keep the standard structure while you are onboarding.
-3. Replace sample content with your real user guidance.
+2. Replace sample content with your real user guidance.
 
 ## End-to-end flow
 
@@ -24,7 +23,7 @@ flowchart TB
     C --> D[Run repository preview and link checks]
     D --> E[Open PR and get review]
     E --> F[Merge approved changes]
-    F --> G[Run portal ingestion and publish]
+    F --> G[Optional: add source to Developer Portal]
     G --> H[Verify pages and search visibility]
 ```
 
@@ -47,11 +46,11 @@ flowchart TB
 2. Run the repository's documented link validation checks.
 3. Ask at least one reviewer to confirm readability for non-technical users.
 
-## Step 4: Publish through the Developer Portal
+## Step 4 (optional): Add your docs to the Developer Portal
 
-1. Add or confirm the source entry in portal onboarding configuration (`sources.json`) using [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
-2. Raise a pull request in the Developer Portal repository to add your source entry, following [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
-3. Confirm pages render correctly and appear in search using checks from the [Documentation Content Management Runbook](../runbooks/documentation-content-management-runbook.html) and [Test Suite Runbook](../runbooks/testing-developer-portal.html).
+1. If you want this documentation published in the Developer Portal, follow [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
+2. Use that guide for `sources.json`, PR steps, and Slack review request.
+3. After merge, verify pages render correctly and appear in search.
 
 ## Common mistakes to avoid
 
@@ -62,7 +61,7 @@ flowchart TB
 
 ## Support and escalation
 
-If your documentation source needs a non-standard format or special ingestion support, contact the Developer Experience team before publishing.
+If you need help with onboarding to the Developer Portal, ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).
 
 ## Related pages
 
