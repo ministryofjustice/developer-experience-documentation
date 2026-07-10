@@ -1,0 +1,69 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Create and Publish a Documentation Site
+last_reviewed_on: 2026-07-09
+review_in: 6 months
+---
+
+# Create and Publish a Documentation Site
+
+Use this page for a complete, user-friendly path to create and publish a documentation site using the MoJ template.
+
+## Recommended starting point
+
+1. Start from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
+2. Replace sample content with your real user guidance.
+
+## End-to-end flow
+
+```mermaid
+flowchart TB
+    A[Create repository from template] --> B[Set ownership and metadata]
+    B --> C[Draft user-focused content]
+    C --> D[Run repository preview and link checks]
+    D --> E[Open PR and get review]
+    E --> F[Merge approved changes]
+    F --> G[Optional: add source to Developer Portal]
+    G --> H[Verify pages and search visibility]
+```
+
+## Step 1: Create from template
+
+1. Create a new repository using the template.
+2. Follow template setup instructions in the README.
+3. Update the `CODEOWNERS` file in your repository so review requests go to the correct team.
+4. Remove sample pages you do not need.
+
+## Step 2: Prepare user-focused content
+
+1. Use plain language and explain acronyms.
+2. Add ownership metadata on pages.
+3. Keep page names clear and descriptive.
+
+## Step 3: Validate before PR
+
+1. Use the repository's documented preview workflow.
+2. Run the repository's documented link validation checks.
+3. Ask at least one reviewer to confirm readability for non-technical users.
+
+## Step 4 (optional): Add your docs to the Developer Portal
+
+1. If you want this documentation published in the Developer Portal, follow [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html).
+2. Use that guide for `sources.json`, PR steps, and Slack review request.
+3. After merge, verify pages render correctly and appear in search.
+
+## Common mistakes to avoid
+
+1. Publishing without clear page ownership.
+2. Keeping template placeholder content in production.
+3. Using internal-only terminology in external docs.
+4. Publishing without checking links and navigation.
+
+## Support and escalation
+
+If you need help with onboarding to the Developer Portal, ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).
+
+## Related pages
+
+1. [Add a Documentation Site to the Portal](./add-documentation-site-to-the-portal.html)
+
