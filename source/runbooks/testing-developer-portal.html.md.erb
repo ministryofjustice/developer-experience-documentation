@@ -1,0 +1,478 @@
+---
+
+owner_slack: "#developer-experience-alerts"
+title: Test Suite Runbook
+last_reviewed_on: 2026-06-18
+review_in: 6 months
+-------------------
+
+# Test Suite Runbook
+
+This runbook outlines how to run, understand, and troubleshoot the portal test suite.
+
+## Purpose
+
+The test suite is used to check that the portal behaves as expected after changes are made.
+
+It helps us confirm that:
+
+* individual functions, components, and small pieces of behaviour work as expected
+* important pages and journeys still work in the browser
+* regressions are caught before changes are merged
+* accessibility expectations are considered where relevant
+* failed tests can be investigated consistently
+
+## Benefits
+
+* Provides fast feedback during local development
+* Improves confidence when changing existing behaviour
+* Helps reviewers understand what has been tested
+* Supports safer refactoring
+* Makes failures easier to debug locally and in CI
+* Encourages consistent test naming and structure
+
+## Prerequisites
+
+* Node.js installed
+* Project dependencies installed
+* A local copy of the repository
+* Your branch up to date with the target branch
+
+Install dependencies before running the test suite:
+
+```bash
+npm install
+```
+
+## Project Structure
+
+The project is structured with source code and tests in parallel.
+
+```text
+root/
+├── src/
+│   ├── app/
+│   │   ├── community/
+│   │   ├── contact-us/
+│   │   ├── docs/
+│   │   └── ...
+│   ├── components/
+│   └── lib/
+├── tests/
+│   ├── unit/
+│   │   ├── app/
+│   │   │   ├── community/
+│   │   │   └── ...
+│   │   ├── components/
+│   │   │   ├── breadcrumbs/
+│   │   │   └── ...
+│   │   └── ...
+│   └── e2e/
+│       ├── smoke/
+│       │   ├── home/
+│       │   ├── navigation/
+│       │   └── ...
+│       ├── pages/
+│       │   ├── home/
+│       │   └── ...
+│       └── ...
+```
+
+Where possible, tests should mirror the structure of the source code they cover.
+
+For example:
+
+```text
+src/components/breadcrumbs/
+tests/unit/components/breadcrumbs/
+```
+
+End-to-end tests may be grouped by journey, page, or purpose, depending on what is easiest for the team to maintain.
+
+## Test Types
+
+| Test type        | Tool       | Naming convention | Purpose                                                                         |
+| ---------------- | ---------- | ----------------- | ------------------------------------------------------------------------------- |
+| Unit tests       | Vitest     | `*.test.ts`       | Test individual functions, components, and small pieces of behaviour            |
+| End-to-end tests | Playwright | `*.spec.ts`       | Test pages, navigation, smoke checks, key journeys, and browser-level behaviour |
+
+## Steps
+
+### 1. Run Unit Tests
+
+The portal uses **Vitest** for lightweight, fast unit testing.
+
+Unit tests should be named using the following convention:
+
+```text
+*.test.ts
+```
+
+Unit tests are located in:
+
+```text
+tests/unit/
+```
+
+Run all unit tests:
+
+```bash
+npm run test
+```
+
+Use unit tests for:
+
+* utility functions
+* data transformation logic
+* component behaviour
+* validation rules
+* rendering logic
+* edge cases
+
+### 2. Run Unit Tests With Coverage
+
+Run all unit tests and generate a coverage report:
+
+```bash
+npm run test:coverage
+```
+
+Use this when you want to understand which areas of the codebase are covered by unit tests.
+
+Coverage is useful for spotting gaps, but it should not be treated as the only measure of test quality.
+
+### 3. Run Unit Tests in Browser UI Mode
+
+Run all unit tests via a clickable web browser for interactive reporting:
+
+```bash
+npm run test:ui
+```
+
+Use this when you want to:
+
+* explore test failures
+* re-run individual tests
+* review test output
+* debug locally
+
+### 4. Run Unit Tests in Watch Mode
+
+Run all unit tests with the runner remaining open and running continuously as files change:
+
+```bash
+npm run test:watch
+```
+
+Use this while actively developing.
+
+Watch mode is useful during development, but you should still run the full relevant test suite before raising a pull request.
+
+### 5. Run End-to-End Tests
+
+The portal uses **Playwright** for end-to-end testing.
+
+End-to-end tests should be named using the following convention:
+
+```text
+*.spec.ts
+```
+
+End-to-end tests are located in:
+
+```text
+tests/e2e/
+```
+
+Run all end-to-end tests in headless mode:
+
+```bash
+npm run test:e2e
+```
+
+Use this for normal local test runs before raising a pull request.
+
+Use end-to-end tests for:
+
+* smoke tests
+* page-level behaviour
+* navigation
+* critical user journeys
+* browser-level behaviour
+* accessibility expectations where relevant
+
+### 6. Run End-to-End Tests in Playwright UI Mode
+
+Run all end-to-end tests in Playwright UI mode:
+
+```bash
+npm run test:e2e-ui
+```
+
+Use this when you want to:
+
+* run individual tests
+* debug failures
+* quickly re-run tests
+* inspect test output
+
+### 7. Run End-to-End Tests in Headed Mode
+
+Run all end-to-end tests in headed mode:
+
+```bash
+npm run test:e2e-headed
+```
+
+Use this when you want to observe the browser while the tests run.
+
+This is useful when:
+
+* a test passes technically but appears visually wrong
+* you want to understand what the test is doing
+* you need to see the page state during the test run
+
+### 8. Run End-to-End Tests in Debug Mode
+
+Run all end-to-end tests in debug mode:
+
+```bash
+npm run test:e2e-debug
+```
+
+Use this when you need to:
+
+* step through tests
+* pause actions
+* inspect selectors
+* check page state
+* debug timing issues
+* understand why a journey is failing
+
+## Accessibility Coverage
+
+The portal does not have a dedicated accessibility test folder.
+
+Accessibility checks should be included in the most relevant end-to-end tests where accessibility is part of the expected behaviour for a page or journey.
+
+For example, accessibility-related assertions may sit alongside tests for:
+
+* page rendering
+* navigation
+* forms
+* error messages
+* interactive components
+* key user journeys
+
+Accessibility failures should be investigated rather than ignored.
+
+Common causes include:
+
+* missing labels
+* invalid heading structure
+* invalid ARIA attributes
+* inaccessible interactive elements
+* missing landmarks
+* colour contrast issues
+* keyboard navigation issues
+
+When adding or changing a page, consider whether the relevant end-to-end test should also check accessibility expectations for that journey.
+
+## Recommended Local Test Flow
+
+For most code changes, run:
+
+```bash
+npm run test
+npm run test:e2e
+```
+
+For changes affecting shared components, navigation, layouts, accessibility, or page rendering, also use Playwright UI mode or headed mode to inspect the journey:
+
+```bash
+npm run test:e2e-ui
+```
+
+or:
+
+```bash
+npm run test:e2e-headed
+```
+
+For changes where test coverage matters, run:
+
+```bash
+npm run test:coverage
+```
+
+## Before Raising a Pull Request
+
+Before raising a pull request, check that:
+
+* relevant unit tests pass
+* relevant end-to-end tests pass
+* new behaviour has appropriate test coverage
+* changed behaviour has updated tests
+* failing tests have been investigated
+* skipped tests are explained
+
+A useful pull request testing note looks like this:
+
+```md
+## Testing
+
+- Ran `npm run test`
+- Ran `npm run test:e2e`
+- Checked the affected journey locally
+```
+
+If you used a more specific command, include that instead.
+
+For example:
+
+```md
+## Testing
+
+- Ran `npm run test`
+- Ran `npm run test:e2e-ui`
+- Re-ran the navigation smoke tests in Playwright UI mode
+```
+
+## Adding New Unit Tests
+
+Add unit tests when:
+
+* adding new utility logic
+* changing existing behaviour
+* fixing a bug
+* adding edge case handling
+* refactoring logic that should behave the same way afterwards
+
+Unit tests should be small, focused, and easy to understand.
+
+Prefer testing behaviour rather than implementation details.
+
+## Adding New End-to-End Tests
+
+Add or update end-to-end tests when:
+
+* adding a new page
+* changing navigation
+* changing a critical journey
+* changing accessibility expectations
+* changing page-level rendering
+* fixing a bug that was only visible through user interaction
+
+End-to-end tests should focus on what a user can observe or do.
+
+Prefer stable, user-facing selectors and assertions.
+
+Avoid writing end-to-end tests that depend too heavily on implementation details.
+
+## Debugging Unit Test Failures
+
+When a unit test fails:
+
+1. Read the full error message.
+2. Re-run the failing test.
+3. Check whether the expected behaviour has changed.
+4. Check whether the test data still reflects the scenario.
+5. Check whether mocks or test setup need updating.
+6. Only update the test if the expected behaviour has genuinely changed.
+
+Common causes of unit test failures include:
+
+* expected output has changed
+* mock data is out of date
+* imports have moved
+* component props have changed
+* the test is too tightly coupled to implementation details
+
+## Debugging End-to-End Test Failures
+
+When an end-to-end test fails:
+
+1. Re-run the test in Playwright UI mode.
+2. If needed, re-run the test in headed mode.
+3. Use debug mode to step through the failing journey.
+4. Check whether the page, selector, route, or expected text has changed.
+5. Check whether the test is failing because of timing, data, or behaviour.
+6. Avoid adding arbitrary waits unless there is no better option.
+
+Useful commands:
+
+```bash
+npm run test:e2e-ui
+npm run test:e2e-headed
+npm run test:e2e-debug
+```
+
+Common causes of end-to-end failures include:
+
+* page content changed
+* route changed
+* selector changed
+* test expects content before it has loaded
+* accessibility behaviour changed
+* the local app is not running as expected
+* the test relies on unstable timing
+
+## CI Failures
+
+If tests pass locally but fail in CI, check:
+
+* whether the branch is up to date with `main`
+* whether CI is using a different Node version
+* whether dependencies have changed
+* whether environment variables are missing
+* whether the failure is caused by timing
+* whether the test relies on local-only state
+* whether the test order matters unexpectedly
+
+Avoid repeatedly re-running CI without first checking the failure.
+
+## Minimum Standard Before Merging
+
+A change should not be merged unless:
+
+* the relevant unit tests pass
+* the relevant end-to-end tests pass
+* new or changed behaviour is covered
+* skipped tests are explained
+* the pull request explains what has been tested
+
+## Useful Commands
+
+| Task                                       | Command                   |
+| ------------------------------------------ | ------------------------- |
+| Run all unit tests                         | `npm run test`            |
+| Run unit tests with coverage               | `npm run test:coverage`   |
+| Run unit tests in browser UI               | `npm run test:ui`         |
+| Run unit tests in watch mode               | `npm run test:watch`      |
+| Run all end-to-end tests                   | `npm run test:e2e`        |
+| Run end-to-end tests in Playwright UI mode | `npm run test:e2e-ui`     |
+| Run end-to-end tests in headed mode        | `npm run test:e2e-headed` |
+| Run end-to-end tests in debug mode         | `npm run test:e2e-debug`  |
+
+## Checklist
+
+<ol>
+    <li>
+        <label>Install project dependencies</label>
+    </li>
+    <li>
+        <label>Run unit tests with <code>npm run test</code></label>
+    </li>
+    <li>
+        <label>Run end-to-end tests with <code>npm run test:e2e</code></label>
+    </li>
+    <li>
+        <label>Use UI, headed, or debug mode to investigate any end-to-end failures</label>
+    </li>
+    <li>
+        <label>Check whether new or changed behaviour has appropriate test coverage</label>
+    </li>
+    <li>
+        <label>Add a testing note to the pull request</label>
+    </li>
+</ol>

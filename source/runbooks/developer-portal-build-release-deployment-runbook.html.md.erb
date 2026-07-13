@@ -1,0 +1,420 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Developer Portal Build, Release and Deployment Runbook
+last_reviewed_on: 2026-07-03
+review_in: 6 months
+---
+
+# Developer Portal Build, Release and Deployment Runbook
+
+This runbook explains build, release and deployment guidance for the `main` branch of:
+
+- Repository: [ministryofjustice/ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal)
+- Branch scope: `main`
+
+## Purpose
+
+Use this runbook to:
+
+1. Understand the `main` branch CI/CD flow.
+2. Release via Release Please.
+3. Deploy to dev automatically.
+4. Deploy to prod manually.
+5. Troubleshoot and recover quickly.
+
+## High-Level Delivery Flow
+
+```mermaid
+flowchart TB
+    A[Change merged to main] --> B[CI workflows run]
+    B --> C[Build static app and container image in deploy workflows]
+    C --> D[Automatic deploy to dev workflow]
+    D --> E[Run health smoke test on dev]
+    E --> F[Release Please updates release PR and tags]
+    F --> G[Manual deploy to prod workflow dispatch]
+    G --> H[Run health smoke test on prod]
+```
+
+## Main Branch Workflows
+
+Key workflow files on `main`:
+
+1. `.github/workflows/lint.yml`
+2. `.github/workflows/unit-test.yml`
+3. `.github/workflows/sca.yml`
+4. `.github/workflows/release-please.yml`
+5. `.github/workflows/deploy-dev.yml`
+6. `.github/workflows/deploy-prod.yml`
+7. `.github/workflows/preview.yml` (PR validation for `main`)
+
+## Pull Request Workflow
+
+PR workflow file:
+
+1. `.github/workflows/preview.yml`
+
+Trigger:
+
+1. `pull_request` targeting `main`.
+
+Behavior:
+
+1. Checks out PR code.
+2. Installs dependencies.
+3. Runs ingestion script.
+4. Builds the portal.
+
+```mermaid
+flowchart TB
+    A[Open or update PR to main] --> B[preview.yml triggered]
+    B --> C[Install dependencies]
+    C --> D[Run ingest]
+    D --> E[Build site]
+    E --> F[PR validation result]
+```
+
+## Workflow Responsibilities Matrix
+
+| Workflow | Purpose | Trigger conditions | Dependencies | Outputs |
+| --- | --- | --- | --- | --- |
+| `preview.yml` | Validate PR ingest + build path | PR to `main` | Node runtime, npm dependencies, ingest/build scripts | PR build validation result |
+| `lint.yml` | Code quality and formatting checks | Push to all branches | Node runtime, npm dependencies, lint/validate scripts | Lint/validation pass/fail signal |
+| `unit-test.yml` | Unit tests with coverage | PR to `main`, push to `main` | Node runtime, npm dependencies, test suite | Test and coverage pass/fail signal |
+| `sca.yml` | Security composition analysis | Scheduled, PR, manual, branch protection events | DevSecOps actions, dependency metadata | Security findings and pass/fail signal |
+| `release-please.yml` | Manage release PR and version/tag lifecycle | Push to `main` | Conventional commit history | Release PR updates, release tags, GitHub release |
+| `deploy-dev.yml` | Build/push/deploy to dev | Push to `main`, manual dispatch | ECR config, dev kube secrets, deployment manifests | Dev deployment and smoke test result |
+| `deploy-prod.yml` | Build/push/deploy to prod | Manual dispatch | ECR config, prod kube secrets, deployment manifests | Prod deployment and smoke test result |
+
+## Build and Validation Path
+
+### CI quality gates
+
+```mermaid
+flowchart TB
+    A[Push or PR event] --> B[Lint workflow]
+    A --> C[Unit test workflow]
+    A --> D[SCA workflow]
+    B --> E[Pass or fail]
+    C --> E
+    D --> E
+```
+
+What runs:
+
+1. Lint workflow: markdown, YAML, TypeScript checks, spellcheck.
+2. Unit tests workflow: `npm run test:coverage`.
+3. SCA workflow: dependency review, OWASP, secrets scanning, CodeQL, OpenSSF, SBOM.
+
+### Local build commands
+
+From repository root:
+
+```bash
+make install
+make build
+```
+
+Equivalent key npm command:
+
+```bash
+npm run build
+```
+
+Container test locally:
+
+```bash
+make docker-build IMAGE_URI=local/ministry-of-justice-developer-portal:dev
+make docker-run IMAGE_URI=local/ministry-of-justice-developer-portal:dev
+```
+
+## Release Guidance (Release Please)
+
+Release workflow file:
+
+- `.github/workflows/release-please.yml`
+
+Trigger:
+
+1. Push to `main`.
+
+Behavior:
+
+1. Updates or creates a Release PR using conventional commits.
+2. On release PR merge, creates/updates GitHub release and tags.
+
+```mermaid
+flowchart TB
+    A[Push to main] --> B[Release Please action runs]
+    B --> C[Create or update Release PR]
+    C --> D[Release PR reviewed and merged]
+    D --> E[GitHub tag and release published]
+```
+
+Operator checks:
+
+1. Ensure commit messages follow conventional commit style.
+2. Review generated release notes in the Release PR.
+3. Confirm release/tag creation in GitHub Releases.
+
+### Conventional commits and SemVer behavior
+
+Typical version bump rules:
+
+1. `fix:` -> patch bump.
+2. `feat:` -> minor bump.
+3. `feat!:` or `BREAKING CHANGE:` -> major bump.
+
+Examples:
+
+```text
+fix: correct retry timeout
+-> v1.4.1
+
+feat: add reporting endpoint
+-> v1.5.0
+
+feat!: replace authentication mechanism
+-> v2.0.0
+```
+
+### Release validation and approval model
+
+Before merging a Release PR:
+
+1. Confirm CI validations are green.
+2. Confirm release notes and version bump are correct.
+3. Confirm change set is ready for deployment.
+4. Obtain required reviewer approval as defined by repository branch protection and team policy.
+
+## Deployment Guidance
+
+### Dev deployment (`deploy-dev.yml`)
+
+Trigger:
+
+1. Automatic on push to `main`.
+2. Manual via `workflow_dispatch`.
+
+Workflow summary:
+
+1. Validates ECR config (`DEV_ECR_ROLE_TO_ASSUME`, `ECR_REGION`, `ECR_REPOSITORY`).
+2. Builds and pushes image tagged with `${github.sha}`.
+3. Configures `kubectl` with DEV cluster secrets.
+4. Applies `k8s/dev/deployment.yaml` with image and namespace substitution.
+5. Waits for rollout and runs smoke test against `https://dev.developer-portal.service.justice.gov.uk/healthz`.
+
+```mermaid
+flowchart TB
+    A[Push to main or manual dispatch] --> B[Build amd64 Docker image]
+    B --> C[Push image to ECR with SHA tag]
+    C --> D[Configure kubectl for dev namespace]
+    D --> E[Apply k8s/dev deployment manifest]
+    E --> F[Wait for rollout status]
+    F --> G[Run dev health smoke test]
+```
+
+### Prod deployment (`deploy-prod.yml`)
+
+Trigger:
+
+1. Manual only via `workflow_dispatch`.
+
+Workflow summary:
+
+1. Validates ECR config (`PROD_ECR_ROLE_TO_ASSUME`, `ECR_REGION`, `ECR_REPOSITORY`).
+2. Builds and pushes image tagged with `${github.sha}`.
+3. Configures `kubectl` with PROD cluster secrets.
+4. Applies `k8s/prod/deployment.yaml` with image and namespace substitution.
+5. Waits for rollout and runs smoke test against `https://developer-portal.service.justice.gov.uk/healthz`.
+
+```mermaid
+flowchart TB
+    A[Manual workflow dispatch] --> B[Build amd64 Docker image]
+    B --> C[Push image to ECR with SHA tag]
+    C --> D[Configure kubectl for prod namespace]
+    D --> E[Apply k8s/prod deployment manifest]
+    E --> F[Wait for rollout status]
+    F --> G[Run prod health smoke test]
+```
+
+## Deployment Flow (End-to-End View)
+
+```mermaid
+flowchart TB
+    A[PR raised] --> B[preview.yml validates ingest and build]
+    B --> C[PR merged to main]
+    C --> D[lint/unit-test/sca workflows run]
+    D --> E[deploy-dev.yml builds image and deploys to dev]
+    E --> F[Dev smoke test]
+    F --> G[release-please.yml updates release lifecycle]
+    G --> H[Manual deploy-prod.yml dispatch]
+    H --> I[Prod rollout and smoke test]
+```
+
+## Image Strategy and Traceability
+
+Current implemented model:
+
+1. Deploy workflows build immutable images tagged by commit SHA: `${github.sha}`.
+2. Release lifecycle creates SemVer Git tags/releases via Release Please.
+
+Traceability model:
+
+1. Source commit SHA -> container image tag.
+2. Same commit history -> Release Please SemVer tag.
+3. Deployment logs + workflow run IDs link environment state to commit/release.
+
+Example identifiers:
+
+```text
+ministry-of-justice-developer-portal:abc1234
+v1.5.0
+```
+
+```mermaid
+flowchart TB
+    A[Git commit SHA] --> B[Image tag with SHA]
+    A --> C[Release Please SemVer tag]
+    B --> D[Deployed workload image]
+    C --> E[GitHub release record]
+    D --> F[Operational traceability]
+    E --> F
+```
+
+## Required Configuration
+
+Repository variables:
+
+1. `NODE_VERSION`
+2. `TIMEZONE`
+3. `ECR_REGION`
+4. `ECR_REPOSITORY`
+
+Environment secrets (dev):
+
+1. `DEV_ECR_ROLE_TO_ASSUME`
+2. `DEV_KUBE_CLUSTER`
+3. `DEV_KUBE_CERT`
+4. `DEV_KUBE_TOKEN`
+5. `DEV_KUBE_NAMESPACE`
+
+Environment secrets (prod):
+
+1. `PROD_ECR_ROLE_TO_ASSUME`
+2. `PROD_KUBE_CLUSTER`
+3. `PROD_KUBE_CERT`
+4. `PROD_KUBE_TOKEN`
+5. `PROD_KUBE_NAMESPACE`
+
+## Security and Governance Controls
+
+Controls reflected in workflows and platform configuration:
+
+1. Least-privilege workflow permissions declared per workflow/job.
+2. Environment-scoped secrets for dev and prod deployment jobs.
+3. Manual production deployment trigger (`workflow_dispatch`) to enforce change control.
+4. Validation gates before deployment (lint, tests, SCA, PR build checks).
+5. Branch protection and required reviewers for release/deployment governance (configured in repository settings).
+6. Production environment approval gates and reviewer requirements (configured in GitHub environment settings, where enabled).
+
+```mermaid
+flowchart TB
+    A[Code change] --> B[PR validation gates]
+    B --> C[Branch protection and approvals]
+    C --> D[Main merge]
+    D --> E[Environment-scoped deployment workflow]
+    E --> F[Manual production promotion control]
+```
+
+## Standard Operating Procedure
+
+### Promote changes from main to dev
+
+1. Merge PR into `main`.
+2. Confirm `deploy-dev.yml` starts and succeeds.
+3. Verify `/healthz` and smoke-test step pass.
+
+### Promote changes from main to prod
+
+1. Confirm latest `main` commit is stable in dev.
+2. Trigger `Deploy to Prod` workflow manually.
+3. Monitor rollout and smoke test.
+4. Confirm production health endpoint and key pages.
+
+## Rollback Guidance
+
+Preferred rollback path:
+
+1. Re-run prod deploy workflow using a previously known-good commit SHA.
+2. Redeploy the known-good image tag.
+
+Approval and recovery expectations:
+
+1. Use the same operational approval model as forward prod deployment.
+2. Prioritize restoration of service before root-cause deep dive.
+3. Record rollback SHA, time, reason, and follow-up actions in incident notes.
+
+```mermaid
+flowchart TB
+    A[Prod issue detected] --> B[Identify last known good SHA]
+    B --> C[Trigger Deploy to Prod on known good SHA]
+    C --> D[Apply manifest with known good image]
+    D --> E[Wait rollout complete]
+    E --> F[Run smoke test and verify health]
+```
+
+## Troubleshooting
+
+### 1. Deploy workflow fails at configuration validation
+
+Likely cause:
+
+1. Missing ECR variable or role secret.
+
+Action:
+
+1. Check workflow logs for missing variable/secret name.
+2. Update Actions variables or environment secrets.
+
+### 2. Rollout timeout
+
+Likely cause:
+
+1. Pod startup failure or image pull issue.
+
+Action:
+
+1. Check deployment events and pod logs in target namespace.
+2. Validate image URI exists in ECR.
+3. Roll back using known-good SHA if needed.
+
+### 3. Smoke test fails
+
+Likely cause:
+
+1. Ingress/DNS propagation or unhealthy app endpoint.
+
+Action:
+
+1. Confirm rollout success first.
+2. Verify `/healthz` response manually.
+3. Re-run deploy if infrastructure timing issue is transient.
+
+## Related Commands (Portal Repo)
+
+Useful commands from the portal repo `Makefile`:
+
+```bash
+make validate
+make build
+make docker-build IMAGE_URI=<registry/repo:tag>
+make k8s-apply-dev IMAGE_URI=<registry/repo:tag>
+make k8s-apply-prod IMAGE_URI=<registry/repo:tag>
+make smoke-dev
+make smoke-prod
+```
+
+## Support
+
+1. Slack: `#developer-experience-alerts`
+2. Raise issue in `ministry-of-justice-developer-portal` for workflow bugs or deployment defects.

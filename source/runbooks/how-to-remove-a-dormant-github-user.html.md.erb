@@ -1,0 +1,90 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: How to Remove a Dormant GitHub User
+last_reviewed_on: 2026-06-26
+review_in: 6 months
+---
+
+# How to Remove a Dormant GitHub User
+
+## Purpose
+
+This document provides instructions for identifying and removing dormant GitHub users within the Ministry of Justice GitHub Enterprise. By following this runbook, the Developer Experience team can optimise the use of GitHub licences, reduce unnecessary costs, and maintain security by ensuring only active users can access enterprise resources.
+
+## Audience
+
+This runbook is primarily for:
+
+* **Developer Experience (DevX) engineers**: to proactively manage dormant GitHub accounts.
+
+## What is a Dormant GitHub User?
+
+According to GitHub, a dormant GitHub user is an account that has not performed any activity within the last 30 days. The [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-users-in-your-enterprise/managing-dormant-users) provides a detailed list of activities that define user activity. There are some limitations to this definition, which are outlined in [GitHub SSO via Auth0](#github-sso-via-auth0).
+
+## Why Remove a Dormant GitHub User?
+
+Dormant users can incur unnecessary costs if they hold licences that could otherwise be allocated to active team members or new users. Additionally, managing dormant users helps maintain security and compliance by reducing the number of potentially inactive accounts that could pose a security risk if compromised.
+
+## What's Required to Remove a Dormant GitHub User?
+
+To remove a dormant GitHub user, you will need:
+
+1. **Access to GitHub Enterprise:** Only enterprise owners or users with sufficient administrative privileges can generate the dormant user report in GitHub.
+2. **Access to a GitHub organisation:** Only organisation owners can remove users from an organisation.
+
+## Identify Dormant GitHub Users
+
+At present, removing a dormant GitHub user is a manual process. Follow these steps:
+
+### 1. Download the Dormant Users report from GitHub
+
+First, generate and download the dormant user report from GitHub Enterprise. You need to be a GitHub Enterprise owner to do this. Follow these steps:
+
+- Navigate to the [GitHub MoJ Enterprise](https://github.com/enterprises/ministry-of-justice-uk).
+- In the sidebar, click **Compliance**.
+- Scroll down to **Reports** and next to **Dormant Users**, click **New report** if a recent report is not already available.
+- Once the report is generated, click **Download** next to the latest dormant users report.
+
+### 2. Identify inactive users to remove
+
+- Review the dormant user CSV file downloaded from GitHub to identify inactive users.
+
+> Be aware of bot accounts, for example `slack-moj`. These often appear in the report but should **not** be removed, as they are likely supporting some form of automation.
+
+> Prioritise removing accounts that clearly belong to an individual, for example accounts containing a real name.
+
+> Do a quick sense check of each user's GitHub profile at `https://github.com/<username>`, but do not treat this as confirmation of inactivity.
+
+- Make a note of the usernames you are removing.
+
+### 3. Remove inactive users from the organisation
+
+- Navigate to the relevant GitHub [organisation](https://github.com/enterprises/ministry-of-justice-uk/organizations) the user is a member of, for example [ministryofjustice](https://github.com/ministryofjustice).
+- Select **People**.
+- Enter the username of the identified dormant user in the search field.
+- Click the checkbox next to the user, then click **1 member selected**.
+- Select **Remove from organization**.
+- If the user is a member of multiple organisations, repeat these steps for each organisation.
+
+## Known Issues and Limitations
+
+### User removed in error
+
+If a user is removed from the GitHub organisation in error, they can rejoin within [three months](https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-membership-in-your-organization/reinstating-a-former-member-of-your-organization#about-member-reinstatement) and retain their previous permissions. If the user has a `@justice.gov.uk` email address, they can rejoin via SSO using one of the following links:
+
+- [Ministry of Justice](https://github.com/orgs/ministryofjustice/sso)
+- [MoJ Analytical Services Organisation](https://github.com/orgs/moj-analytical-services/sso)
+
+### GitHub SSO via Auth0
+
+Many MoJ Digital services, including Cloud Platform, Analytical Platform, and Modernisation Platform, still rely on GitHub SSO via Auth0 to access downstream systems.
+
+This means users can still be actively accessing services through Auth0 even when GitHub shows no recent activity, so the GitHub dormant user report alone could produce false positives.
+
+Previously, we reduced this risk by cross-referencing Auth0 logs with the GitHub dormant user report to build a more accurate picture of activity. That process is no longer in place.
+
+At present, we do not have the capacity to cross-reference these data sources, so this manual process is based on the GitHub dormant user report only.
+
+MoJ is reducing its dependency on GitHub-based SSO and has adopted Entra ID as an additional authentication method. Over time, this should reduce reliance on GitHub as the upstream identity source.
+
+

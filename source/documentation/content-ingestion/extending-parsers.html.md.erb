@@ -1,0 +1,310 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Adding New Documentation Formats (Parsers)
+last_reviewed_on: 2026-06-04
+review_in: 6 months
+---
+
+# Adding New Documentation Formats (Parsers)
+
+## When to Add a Parser
+
+Add a parser when you want the ingestion pipeline to support a new documentation format, such as:
+
+- **11ty (Eleventy)** — Markdown/content directories rendered by Eleventy
+- **Sphinx** — reStructuredText with Sphinx metadata
+- **GitBook** — GitBook's custom markdown extensions
+- **Confluence** — Confluence cloud/server-specific markup
+
+## Anatomy of a Parser
+
+A parser is a small module that implements a single function: `parse(file, source)`.
+
+### Example: Markdown Parser
+
+```javascript
+// parsers/markdownParser.mjs
+
+import fs from 'fs';
+import { remark } from 'remark';
+import remarkGfm from 'remark-gfm';
+import { parseSimpleYaml } from '../yaml.mjs';
+
+const processor = remark().use(remarkGfm);
+
+export function parse(file, _source) {
+  const raw = fs.readFileSync(file.absolute, 'utf-8');
+
+  let frontmatter = {};
+  let bodyText = raw;
+
+  // Extract YAML frontmatter if present
+  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (fmMatch) {
+    frontmatter = parseSimpleYaml(fmMatch[1]);
+    bodyText = fmMatch[2];
+  }
+
+  // Parse body to MDAST
+  const ast = processor.parse(bodyText);
+
+  return {
+    sourcePath: file.relative,
+    outputPath: file.relative,
+    frontmatter,
+    ast,
+    format: 'markdown'
+  };
+}
+```
+
+### Required Interface
+
+Every parser **must** export a `parse(file, source)` function that returns:
+
+```javascript
+{
+  sourcePath: string,       // Original relative path in source repo
+  outputPath: string,       // Normalized output path (e.g., strip .erb extension)
+  frontmatter: object,      // Parsed metadata as plain JS object
+  ast: Root,                // MDAST root node (remark AST)
+  format: string            // Format identifier (used by transforms)
+}
+```
+
+**Key Design:** All parsers produce **MDAST** (Markdown Abstract Syntax Tree) as the universal IR, not a custom object. This ensures transforms and the renderer work uniformly across all formats.
+
+### Parameters
+
+- **file** — Object with:
+  - `absolute` — Full file system path
+  - `relative` — Path relative to docs root
+- **source** — Source config object from `sources.json`:
+  - `id`, `repo`, `format`, `docsPath`, `owner_slack`, etc.
+
+---
+
+## Step-by-Step: Add 11ty Support
+
+Suppose you want to ingest an 11ty repository. 11ty projects often store markdown content under folders such as `docs/`, `content/`, or `src/` with frontmatter and templating metadata.
+
+### 1. Create the Parser Module
+
+Create `scripts/ingestion/parsers/eleventyParser.mjs`:
+
+```javascript
+import fs from 'fs';
+import { remark } from 'remark';
+import remarkGfm from 'remark-gfm';
+import { parseSimpleYaml } from '../yaml.mjs';
+
+/**
+ * Parser: Eleventy (11ty)
+ * 
+ * Handles markdown files authored for 11ty projects.
+ * 11ty commonly uses frontmatter and may include templating markers.
+ * This parser treats 11ty markdown as standard markdown + frontmatter.
+ * 
+ * If needed, you can extend this parser later to normalize 11ty-specific
+ * metadata conventions into portal frontmatter fields.
+ */
+
+const processor = remark().use(remarkGfm);
+
+export function parse(file, _source) {
+  const raw = fs.readFileSync(file.absolute, 'utf-8');
+
+  let frontmatter = {};
+  let bodyText = raw;
+
+  // Extract frontmatter if present
+  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (fmMatch) {
+    frontmatter = parseSimpleYaml(fmMatch[1]);
+    bodyText = fmMatch[2];
+  }
+
+  // TODO: Map common 11ty frontmatter conventions if needed
+  // e.g., frontmatter.order = frontmatter.eleventyNavigation?.order
+
+  const ast = processor.parse(bodyText);
+
+  return {
+    sourcePath: file.relative,
+    outputPath: file.relative,
+    frontmatter,
+    ast,
+    format: 'eleventy'
+  };
+}
+```
+
+### 2. Register the Parser
+
+Update `scripts/ingestion/parsers/parserRegistry.mjs`:
+
+```javascript
+import * as techDocsParser from './techDocsParser.mjs';
+import * as markdownParser from './markdownParser.mjs';
+import * as eleventyParser from './eleventyParser.mjs';  // Add import
+
+const REGISTRY = {
+  'tech-docs-template': techDocsParser,
+  markdown: markdownParser,
+  mdx: markdownParser,
+  eleventy: eleventyParser,  // Add registration
+};
+
+export function getParser(format) {
+  const parser = REGISTRY[format];
+  if (!parser) {
+    throw new Error(
+      `No parser registered for format "${format}". ` +
+        `Registered formats: ${Object.keys(REGISTRY).join(', ')}`
+    );
+  }
+  return parser;
+}
+```
+
+### 3. Configure an 11ty Source
+
+Update `sources.json` to add an 11ty source:
+
+```json
+{
+  "id": "example-eleventy-docs",
+  "name": "Example 11ty Docs",
+  "description": "Documentation for example project using Eleventy",
+  "repo": "example-org/example-repo",
+  "branch": "main",
+  "docsPath": "docs",
+  "format": "eleventy",
+  "enabled": true
+}
+```
+
+### 4. Update Discovery Rules (if needed)
+
+If your 11ty docs use a different content extension set, update `scripts/ingestion/discovery.mjs`:
+
+```javascript
+function isDocFile(name, format) {
+  if (format === 'tech-docs-template') {
+    return name.endsWith('.html.md.erb') || name.endsWith('.md');
+  }
+  if (format === 'eleventy') {
+    // Most 11ty docs are markdown content files
+    return name.endsWith('.md') || name.endsWith('.mdx');
+  }
+  return name.endsWith('.md') || name.endsWith('.mdx');
+}
+```
+
+### 5. Add Format-Specific Transforms (if needed)
+
+If 11ty links or content need special handling, add a transform or extend an existing one.
+
+For example, if 11ty output includes permalink-style links that need normalizing:
+
+```javascript
+// scripts/ingestion/transforms/linkRewriteTransform.mjs
+
+export function linkRewriteTransform(ir, source) {
+  // ... existing tech-docs logic ...
+
+  if (ir.format === 'eleventy') {
+    // Rewrite 11ty-specific link patterns
+    visit(ir.ast, 'link', (node) => {
+      if (node.url.startsWith('/')) {
+        // Handle 11ty permalink conventions as needed
+      }
+    });
+  }
+
+  return ir;
+}
+```
+
+### 6. Test the Parser
+
+Create `tests/unit/scripts/ingestion-eleventy.test.ts`:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import * as eleventyParser from '../../../scripts/ingestion/parsers/eleventyParser.mjs';
+
+describe('eleventyParser', () => {
+  it('parses markdown with optional frontmatter', () => {
+    const ir = eleventyParser.parse({
+      absolute: 'path/to/file.md',
+      relative: 'getting-started.md'
+    }, { id: 'example', format: 'eleventy' });
+
+    expect(ir.format).toBe('eleventy');
+    expect(ir.ast).toBeDefined();
+    expect(ir.frontmatter).toEqual({});
+  });
+
+  // Add more tests for 11ty-specific behavior
+});
+```
+
+---
+
+## Tips and Patterns
+
+### Using remark Plugins
+
+If the source format needs custom markdown processing, remark has a rich plugin ecosystem:
+
+```javascript
+import { remark } from 'remark';
+import remarkGfm from 'remark-gfm';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkMath from 'remark-math';
+
+const processor = remark()
+  .use(remarkGfm)
+  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkMath);
+```
+
+### Handling Non-Markdown Formats
+
+If the source is not markdown (e.g., Sphinx reStructuredText, Confluence XML), convert it to markdown **within the parser**, then parse to MDAST:
+
+```javascript
+import { marked } from 'marked'; // or pandoc, etc.
+
+export function parse(file, source) {
+  const raw = fs.readFileSync(file.absolute, 'utf-8');
+  const markdownVersion = convertRstToMarkdown(raw); // Your converter
+  const ast = processor.parse(markdownVersion);
+  return { sourcePath, outputPath, frontmatter, ast, format };
+}
+```
+
+### Metadata Extraction
+
+If the source format embeds metadata differently, extract it in the parser:
+
+```javascript
+export function parse(file, source) {
+  // ... read file, extract metadata your way ...
+  const frontmatter = {
+    title: extractFromSourceMetadata(raw),
+    author: extractAuthor(raw),
+    // ... standard fields ...
+  };
+  
+  const ast = processor.parse(bodyText);
+  return { sourcePath, outputPath, frontmatter, ast, format };
+}
+```
+
+---
+
+## Next: Adding a New Source Type (Connector)
+
+If you need to fetch content from a system that isn't GitHub (S3, Confluence, etc.), see [Adding New Source Types (Connectors)](./extending-connectors.html).

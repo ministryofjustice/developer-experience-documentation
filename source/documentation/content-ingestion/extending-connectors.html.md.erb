@@ -1,0 +1,422 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Adding New Source Systems (Connectors)
+last_reviewed_on: 2026-06-04
+review_in: 6 months
+---
+
+# Adding New Source Systems (Connectors)
+
+## When to Add a Connector
+
+Add a connector when you want the ingestion pipeline to fetch content from a new source system, such as:
+
+- **S3** — Documentation stored in Amazon S3 buckets
+- **Confluence** — Atlassian Confluence cloud or server
+- **GitLab** — GitLab repositories (instead of GitHub)
+- **Documentation Site API** — Generic HTTP API that serves docs
+
+Currently, only GitHub is supported. A connector abstraction exists to make adding new systems straightforward.
+
+## Anatomy of a Connector
+
+A connector is a module that implements a single function: `fetchSource(source)`.
+
+### Example: GitHub Connector
+
+```javascript
+// connectors/githubConnector.mjs
+
+import fs from 'fs';
+import path from 'path';
+import { execFileSync } from 'child_process';
+import { CLONE_DIR } from '../constants.mjs';
+
+/**
+ * Connector: GitHub repository
+ * 
+ * Fetches MoJ repositories hosted on GitHub.
+ */
+
+export function fetchSource(source) {
+  const repoSlug = source.repo.replace(/\//g, '--');
+  const repoDir = path.join(CLONE_DIR, repoSlug);
+  const repoUrl = `https://github.com/` + `${source.repo}` + `.git`;
+  const branch = source.branch || 'main';
+
+  if (fs.existsSync(path.join(repoDir, '.git'))) {
+    // Already cloned; update it
+    execFileSync('git', ['fetch', 'origin', branch, '--depth=1'], {
+      cwd: repoDir,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['reset', '--hard', `origin/${branch}`], {
+      cwd: repoDir,
+      stdio: 'pipe',
+    });
+  } else {
+    // New clone
+    execFileSync('git', ['clone', '--depth=1', '--branch', branch, repoUrl, repoDir], {
+      stdio: 'pipe',
+    });
+  }
+
+  return repoDir;
+}
+```
+
+### Required Interface
+
+Every connector **must** export a `fetchSource(source)` function that:
+
+**Input:** `source` — Source config object from `sources.json`:
+- `id`, `repo`, `branch`, `docsPath`, `format`, `owner_slack`, etc.
+- Can also include connector-specific fields (e.g., `s3Bucket`, `confluenceSpace`)
+
+**Output:** `repoDir` (string) — Path to a local directory containing the fetched content.
+
+**Error Handling:** Throw descriptive errors if the source cannot be fetched. The pipeline will report them and skip the source.
+
+---
+
+## Step-by-Step: Add Confluence Support
+
+Suppose you want the portal to ingest documentation from Atlassian Confluence. Confluence hosts docs in cloud or server with an API to fetch pages.
+
+### 1. Create the Connector Module
+
+Create `scripts/ingestion/connectors/confluenceConnector.mjs`:
+
+```javascript
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import { CLONE_DIR } from '../constants.mjs';
+
+/**
+ * Connector: Confluence Cloud
+ * 
+ * Fetches documentation from Atlassian Confluence Cloud via REST API.
+ * 
+ * Required source config fields:
+ *   - confluenceSpace: string    (space key, e.g., "EXA")
+ *   - confluenceOrg: string      (Confluence org URL, e.g., "example.atlassian.net")
+ *   - confluenceToken: string    (API token from CONFLUENCE_TOKEN env var, not in sources.json)
+ */
+
+export function fetchSource(source) {
+  if (!source.confluenceSpace || !source.confluenceOrg) {
+    throw new Error(
+      `Confluence source "${source.id}" missing confluenceSpace or confluenceOrg`
+    );
+  }
+
+  const token = process.env.CONFLUENCE_TOKEN;
+  if (!token) {
+    throw new Error('CONFLUENCE_TOKEN environment variable not set');
+  }
+
+  const localDir = path.join(CLONE_DIR, `confluence-${source.confluenceSpace}`);
+
+  if (!fs.existsSync(localDir)) {
+    fs.mkdirSync(localDir, { recursive: true });
+  } else {
+    // Clear old files; Confluence API fetches are not incremental like git
+    fs.rmSync(localDir, { recursive: true });
+    fs.mkdirSync(localDir, { recursive: true });
+  }
+
+  console.log(
+    `  Fetching Confluence space ${source.confluenceSpace} from ${source.confluenceOrg}...`
+  );
+
+  // Fetch all pages from the space
+  const baseUrl = `https://${source.confluenceOrg}/wiki/api/v2/spaces/${source.confluenceSpace}/pages`;
+  const pages = fetchConfluencePagesRecursive(baseUrl, token);
+
+  // Download page content
+  for (const page of pages) {
+    downloadConfluencePage(page, localDir, source.confluenceOrg, token);
+  }
+
+  return localDir;
+}
+
+function fetchConfluencePagesRecursive(baseUrl, token, cursor = null) {
+  const url = cursor ? `${baseUrl}?cursor=${cursor}` : baseUrl;
+  const response = makeConfluenceRequest(url, token);
+  const pages = response.results || [];
+
+  if (response.links?.next) {
+    const nextCursor = new URL(response.links.next).searchParams.get('cursor');
+    return [...pages, ...fetchConfluencePagesRecursive(baseUrl, token, nextCursor)];
+  }
+
+  return pages;
+}
+
+function downloadConfluencePage(page, localDir, org, token) {
+  // Fetch page body with all expansions
+  const pageUrl = `https://${org}/wiki/api/v2/pages/${page.id}?body-format=storage`;
+  const pageData = makeConfluenceRequest(pageUrl, token);
+
+  // Convert Confluence storage format to markdown
+  const markdown = convertConfluenceStorageToMarkdown(
+    pageData.body?.storage?.value || ''
+  );
+
+  // Build local path from Confluence breadcrumb
+  const slug = pageData.title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-');
+  const filePath = path.join(localDir, `${slug}.md`);
+
+  fs.writeFileSync(filePath, markdown, 'utf-8');
+}
+
+function makeConfluenceRequest(url, token) {
+  return new Promise((resolve, reject) => {
+    const auth = Buffer.from(`user@example.com:${token}`).toString('base64');
+    const options = {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json',
+      },
+    };
+
+    https.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`Confluence API error: ${res.statusCode}`));
+        } else {
+          resolve(JSON.parse(data));
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+function convertConfluenceStorageToMarkdown(storageXml) {
+  // Confluence uses XHTML storage format; convert to markdown
+  // This is a simplified example; real implementation would use html-to-markdown lib
+  return storageXml
+    .replace(/<ac:structured-macro[^>]*>/g, '')
+    .replace(/<\/?ac:[^>]*>/g, '')
+    .replace(/<p>/g, '')
+    .replace(/<\/p>/g, '\n')
+    .replace(/<strong>/g, '**')
+    .replace(/<\/strong>/g, '**')
+    .replace(/<em>/g, '*')
+    .replace(/<\/em>/g, '*')
+    .trim();
+}
+```
+
+### 2. Create a Connector Registry
+
+Create `scripts/ingestion/connectors/connectorRegistry.mjs`:
+
+```javascript
+import { fetchSource as githubFetchSource } from './githubConnector.mjs';
+import { fetchSource as confluenceFetchSource } from './confluenceConnector.mjs';
+
+/**
+ * Connector registry
+ * 
+ * Maps source connector type to its implementation.
+ * To add a new connector:
+ *   1. Create connectors/<name>Connector.mjs with fetchSource(source) function
+ *   2. Import and register it here
+ *   3. Set the matching `connector` field on sources in sources.json
+ */
+
+const REGISTRY = {
+  github: { fetchSource: githubFetchSource },
+  confluence: { fetchSource: confluenceFetchSource },
+};
+
+export function getConnector(connectorType) {
+  const connector = REGISTRY[connectorType];
+  if (!connector) {
+    throw new Error(
+      `No connector registered for type "${connectorType}". ` +
+        `Registered types: ${Object.keys(REGISTRY).join(', ')}`
+    );
+  }
+  return connector;
+}
+```
+
+### 3. Update ingestSource to Use Connector Registry
+
+Modify `scripts/ingestion/ingestSource.mjs`:
+
+```javascript
+import { getConnector } from './connectors/connectorRegistry.mjs';
+
+export async function ingestSource(source, options = {}) {
+  const dryRun = Boolean(options.dryRun);
+
+  // Get connector for this source
+  const connectorType = source.connector || 'github'; // Default to GitHub
+  const connector = getConnector(connectorType);
+  const repoDir = connector.fetchSource(source);
+
+  // ... rest of ingestion pipeline
+}
+```
+
+### 4. Update sources.json to Add Confluence Source
+
+```json
+[
+  {
+    "id": "cloud-platform",
+    "name": "Cloud Platform",
+    "repo": "ministryofjustice/cloud-platform",
+    "connector": "github",
+    "format": "tech-docs-template",
+    "enabled": true
+  },
+  {
+    "id": "confluence-team-docs",
+    "name": "Team Documentation",
+    "confluenceSpace": "TEAMDOCS",
+    "confluenceOrg": "moj.atlassian.net",
+    "connector": "confluence",
+    "format": "markdown",
+    "enabled": false
+  }
+]
+```
+
+### 5. Handle Connector-Specific Config
+
+For connectors that need secrets or environment-specific config, use environment variables:
+
+```javascript
+// confluenceConnector.mjs
+
+const token = process.env.CONFLUENCE_TOKEN;
+const email = process.env.CONFLUENCE_EMAIL;
+
+if (!token || !email) {
+  throw new Error(
+    'CONFLUENCE_TOKEN and CONFLUENCE_EMAIL environment variables required for Confluence connector'
+  );
+}
+```
+
+Set these in CI/CD or local `.env`:
+
+```bash
+export CONFLUENCE_TOKEN=your-api-token
+export CONFLUENCE_EMAIL=your-email@example.com
+npm run ingest
+```
+
+### 6. Test the Connector
+
+Create `tests/unit/scripts/ingestion-confluence.test.ts`:
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import * as confluenceConnector from '../../../scripts/ingestion/connectors/confluenceConnector.mjs';
+
+describe('confluenceConnector', () => {
+  it('throws if required config is missing', () => {
+    expect(() => {
+      confluenceConnector.fetchSource({ id: 'test' });
+    }).toThrow('confluenceSpace');
+  });
+
+  it('validates CONFLUENCE_TOKEN is set', () => {
+    delete process.env.CONFLUENCE_TOKEN;
+    expect(() => {
+      confluenceConnector.fetchSource({
+        id: 'test',
+        confluenceSpace: 'TEST',
+        confluenceOrg: 'test.atlassian.net',
+      });
+    }).toThrow('CONFLUENCE_TOKEN');
+  });
+
+  // Mock the API calls and test real behavior
+});
+```
+
+---
+
+## Tips and Patterns
+
+### Caching Strategy
+
+If fetching is expensive (API quota limits, network latency), consider local caching:
+
+- **Git:** Shallow clone + fetch (already efficient for GitHub)
+- **API:** Cache in local directory; invalidate daily or on demand
+- **S3:** List + download incrementally; cache manifest of fetched files
+
+### Error Handling and Logging
+
+Provide detailed error messages for debugging:
+
+```javascript
+try {
+  // ... fetch logic ...
+} catch (err) {
+  throw new Error(
+    `Failed to fetch Confluence space ${source.confluenceSpace}: ${err.message}`
+  );
+}
+```
+
+### Secrets Management
+
+Never store secrets in `sources.json`. Use environment variables or a secrets manager:
+
+```javascript
+const apiKey = process.env[`${connectorType.toUpperCase()}_API_KEY`];
+if (!apiKey) {
+  throw new Error(`Missing ${connectorType.toUpperCase()}_API_KEY`);
+}
+```
+
+### Rate Limiting and Retries
+
+If the source API rate-limits, implement backoff:
+
+```javascript
+async function retryWithBackoff(fn, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
+```
+
+### Testing Without Real Credentials
+
+Mock the connector for testing:
+
+```typescript
+vi.mock('../../../scripts/ingestion/connectors/confluenceConnector.mjs', () => ({
+  fetchSource: vi.fn(() => '/mock/local/dir'),
+}));
+```
+
+---
+
+## Next: Adding Support for New Document Formats
+
+If your source uses a format other than markdown (e.g., Confluence XHTML, Sphinx RST), you'll also need to add a [Parser](./extending-parsers.html) to convert it to MDAST.
+
+The full pipeline is: **Connector** (fetch) → **Parser** (convert to MDAST) → **Transforms** (enrich) → **Renderer** (output markdown).
