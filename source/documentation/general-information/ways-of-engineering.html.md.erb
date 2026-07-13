@@ -1,0 +1,132 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Our Ways of Engineering
+last_reviewed_on: 2026-07-01
+review_in: 6 months
+---
+
+# Our Ways of Engineering
+
+This foundational document outlines the Developer Experience Teams collective approach to engineering practices, fostering a culture of continuous improvement, innovation, and excellence. It is a compass for our technical journey, guiding us to make informed decisions, embrace best practices, and explore new technologies. This document aims to harmonise our engineering efforts, ensuring efficiency, quality, and sustainability in our projects.
+
+**Statuses:**
+
+- ✅ Accepted
+- 🧪 Experimenting
+- 💡 New idea (waiting to be discussed by the team)
+- ⏸️ Paused (waiting for an experiment to complete)
+
+## Engineering Principles
+
+These principles are intended to guide technical decision-making within the Developer Experience team. They are not absolute rules. Instead, they provide a shared framework for evaluating technologies, architecture, tooling and ways of working. Where trade-offs exist, the principles should be considered together and applied using engineering judgement.
+
+These principles should evolve alongside our team and the products we build. As they are applied to real engineering decisions, we should regularly reflect on whether they continue to represent our values and support good outcomes. Where necessary, they should be refined, expanded or simplified based on our experiences, ensuring they remain practical, relevant and effective rather than becoming static guidance.
+
+### ✅ 1. Build Security In by Design
+
+Security should be considered from the outset of every project rather than being treated as a later activity. We aim to reduce risk by making secure choices the default.
+
+**Heuristics**
+
+- Automate security scanning within CI/CD pipelines.
+- Continuously develop security knowledge across the team.
+- Maintain an active vulnerability management process.
+- Prefer approved third-party tools and integrations where appropriate.
+- Minimise the attack surface by reducing unnecessary tooling.
+
+### ✅ 2. Favour Established Patterns and Proven Practices
+
+Building upon established patterns helps improve consistency, reduces cognitive load and enables engineers to build on existing knowledge rather than reinventing solutions.
+
+**Heuristics**
+
+- Make use of the MoJ Tech Radar when evaluating technologies.
+- Reuse existing MoJ platforms, components and patterns where appropriate.
+- Use established architectural patterns and design artefacts to communicate solutions.
+- Adopt our own products and tooling where they meet our needs.
+
+### ✅ 3. Keep Documentation Clear, Concise and Maintainable
+
+Documentation is a core part of delivering software. It should be easy to find, understand and maintain throughout the lifetime of a system.
+
+**Heuristics**
+
+- Include documentation within the Definition of Done and review process.
+- Assign ownership for documentation and define regular review cadences.
+- Maintain internal runbooks for operational knowledge.
+- Ensure documentation is easy to navigate and search.
+
+### ✅ 4. Enable Rapid Feedback
+
+Fast feedback enables engineers to identify issues early, reduce delivery risk and iterate with confidence.
+
+**Heuristics**
+
+- Provide clear logging and actionable error handling.
+- Support efficient local development environments.
+- Measure and improve feedback loops using meaningful metrics.
+- Adopt DORA metrics where appropriate.
+
+### ✅ 5. Automate Delivery Wherever It Adds Value
+
+Automation should be used to improve consistency, reliability and efficiency, allowing engineers to focus on higher-value work.
+
+**Heuristics**
+
+- Invest in automation that improves reliability, consistency or delivery speed.
+- Continuously improve deployment pipelines.
+
+### ✅ 6. Make Systems Observable from the Start
+
+Observability should be designed into systems from the beginning so that their health, behaviour and performance can be understood throughout their lifecycle.
+
+**Heuristics**
+
+- Design observability into new systems from the outset.
+- Ensure each component exposes appropriate telemetry, logging and monitoring.
+
+## Hosting Services and Infrastructure
+
+### ✅ Use GitHub as the Central Platform for Code and Collaboration
+
+GitHub is our default platform for source control, code review, issue tracking, and CI/CD integration. It provides a consistent workflow for managing code and collaboration across the team.
+
+### ✅ Use GitHub Services for Lightweight Infrastructure Needs
+
+GitHub Actions and GitHub Pages should be used for small-scale infrastructure requirements such as CI/CD workflows, static sites, and documentation.
+
+This reduces operational overhead and avoids introducing additional infrastructure for simple use cases.
+
+- GitHub Pages: static sites, documentation, project portals  
+- GitHub Actions: CI/CD, testing, and automation workflows  
+
+### ✅ Use the Cloud Platform for Production Application Hosting
+
+The Cloud Platform is the default hosting environment for containerised applications and services, providing managed infrastructure and access to AWS capabilities.
+
+New applications should be hosted on the Cloud Platform unless there is a clear technical or operational reason to use an alternative.
+
+## Technology Choices
+
+We use different technologies depending on the type of problem being solved.
+
+### ✅ Languages
+
+- Python: automation and scripting
+- JavaScript: web applications and tooling
+
+### ✅ Application Frameworks
+
+- Next.js: web application framework used for the Developer Portal
+
+### ✅ Engineering Tooling
+
+- Dependabot: automated dependency updates and security maintenance
+
+## Adding/Adjusting Ways of Engineering
+
+To maintain the relevance and effectiveness of our Ways of Engineering, we encourage team members to propose adjustments or additions. Suggestions can be discussed in dedicated Slack channels, Engineering Guild meetings, or directly through Pull Requests. Your contributions are crucial in ensuring our engineering practices remain dynamic, inclusive, and aligned with our goals.
+
+### Experimental Engineering Practices
+
+We’re committed to innovation in our projects and how we work together as an engineering team. Experimenting with new practices allows us to improve and adapt to the changing tech landscape continuously. Participation and feedback from all team members are essential for these experiments to yield valuable insights and guide our evolution.

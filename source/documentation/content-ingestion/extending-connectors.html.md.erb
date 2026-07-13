@@ -1,5 +1,5 @@
 ---
-owner_slack: "#developer-experience-team"
+owner_slack: "#developer-experience-alerts"
 title: Adding New Source Systems (Connectors)
 last_reviewed_on: 2026-06-04
 review_in: 6 months
@@ -41,7 +41,7 @@ import { CLONE_DIR } from '../constants.mjs';
 export function fetchSource(source) {
   const repoSlug = source.repo.replace(/\//g, '--');
   const repoDir = path.join(CLONE_DIR, repoSlug);
-  const repoUrl = `https://github.com/${source.repo}.git`;
+  const repoUrl = `https://github.com/` + `${source.repo}` + `.git`;
   const branch = source.branch || 'main';
 
   if (fs.existsSync(path.join(repoDir, '.git'))) {
