@@ -1,0 +1,77 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Add a Documentation Site to the Portal
+last_reviewed_on: 2026-07-09
+review_in: 6 months
+---
+
+# Add a Documentation Site to the Portal
+
+Use this guide when onboarding a new technical documentation site into the Developer Portal.
+
+## Supported ingestion formats
+
+The Developer Portal ingestion pipeline currently supports documentation content in Markdown and [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site) style structures.
+
+## Step 1: Prepare your documentation repository
+
+Choose one of these paths:
+
+1. Create a new repository from [template-documentation-site](https://github.com/ministryofjustice/template-documentation-site).
+2. Use an existing repository that already publishes documentation in Markdown.
+
+Before raising a request, make sure:
+
+1. Your content is clear for all users and suitable for public publication.
+2. Links and navigation work.
+3. There is an owning team/contact for the documentation.
+
+## Step 2: Raise a pull request to add your site
+
+In [ministryofjustice/ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal):
+
+1. Create a branch for your onboarding change.
+2. Update `sources.json` in that branch.
+3. Open a pull request from your branch to `main`.
+4. Use a clear title, for example: `Add <your-team-docs-repo> to Developer Portal`.
+5. Include the repository URL, source format (template-documentation-site or Markdown), owning team, and expected portal section/category.
+6. Post the PR in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8) for review.
+
+### Add your source in sources.json
+
+To add a new documentation source, update:
+
+1. [sources.json in ministry-of-justice-developer-portal](https://github.com/ministryofjustice/ministry-of-justice-developer-portal/blob/main/sources.json)
+
+Use the existing entries in that file as your template.
+
+Relevant fields for a new source entry:
+
+1. `id` (required): unique slug for your source, for example `my-service-docs`.
+2. `name` (required): display name shown in the portal.
+3. `description` (required): short summary of what the documentation covers.
+4. `category` (required): section in the portal (for example `platform` or `documentation`).
+5. `repo` (required): GitHub repository in `owner/repo` format.
+6. `branch` (required): source branch, usually `main`.
+7. `docsPath` (required): folder path inside your repository where docs live.
+8. `format` (required): content format, typically `tech-docs-template` or `markdown`.
+9. `enabled` (required): set to `true` when ready to include the source.
+10. `owner_slack` (recommended): support channel for ownership/contact.
+11. `navGrouping` (optional): advanced navigation grouping used by some sources.
+
+If you are not sure about `category`, `docsPath`, or `format`, ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8) before opening the PR.
+
+## Step 3: Wait for review and merge
+
+1. The Developer Experience team reviews your PR.
+2. You respond to feedback and update the PR if needed.
+3. Once approved, the PR is merged and your documentation is added to the portal.
+
+## What happens after your PR is merged
+
+1. Developer Portal workflows run to pick up your source. This is not an immediate auto-refresh yet, so updates may take time to appear.
+2. Your documentation appears in the portal navigation/category agreed in the PR.
+3. Search indexing updates and your new pages become discoverable.
+4. If anything looks wrong, raise a follow-up PR with fixes or ask in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).
+
+

@@ -1,0 +1,375 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: SBOM POC Discovery Findings Runbook
+last_reviewed_on: 2026-07-02
+review_in: 6 months
+---
+
+# SBOM POC Discovery Findings Runbook
+
+This runbook captures first-iteration findings for SBOM-based catalog insights implemented in:
+
+- Repository: `ministryofjustice/ministry-of-justice-developer-portal`
+- Implementation branch: `feat/product-catalog-sbom-report`
+
+## Overview
+
+The POC generates product-level catalog insights from GitHub team repositories and displays them in the Developer Portal products experience.
+
+The implementation has two main stages:
+
+1. Catalog generation (data collection, aggregation, and report writing)
+2. Portal display (products list and product detail pages)
+
+## Configured App
+
+Configured app name:
+
+- MoJ Dev Portal SBOM App
+
+Purpose:
+
+- Read-only app used to generate Developer Portal catalog insights from team repositories, SBOM, and Dependabot/code scanning data.
+
+Where it is used:
+
+1. Workflow token generation in `.github/workflows/catalog-insights.yml`
+2. API calls in `scripts/catalog-insights/gateways/github-sbom-gateway.mjs`
+
+## How Catalog Is Generated
+
+Primary orchestration entrypoint:
+
+- `scripts/get_catalog_insights.mjs`
+
+Generation flow:
+
+1. Reading product metadata from `content/products/products.json`
+2. Resolving eligible products using:
+  - `catalogInsightsEnabled === true`
+  - non-empty `teamName`
+3. Resolving team repositories from:
+  - `teamOrg` + `teamName` (default org is `ministryofjustice` if `teamOrg` is not set)
+4. For each resolved repository, collecting:
+  - SBOM from GitHub Dependency Graph SBOM endpoint
+  - optional Dependabot alerts
+  - optional code scanning alerts
+  - deployment-backed SHA/ref metadata (when available)
+5. Aggregating to product-level report data:
+  - status, package totals, ecosystems, licenses
+  - deduplicated package inventory across repositories
+  - aggregated vulnerabilities and code scanning summaries
+6. Applying display policy flags to include/omit selected sections
+7. Writing generated files under `content/products/catalog_reports/`
+8. Removing legacy files that are no longer used (`sbom-reports.json`, `catalog-report.json`, `sbom-sources.json`)
+
+Core implementation files:
+
+- `scripts/get_catalog_insights.mjs`
+- `scripts/catalog-insights/application/catalog-insights-service.mjs`
+- `scripts/catalog-insights/application/catalog-report-service.mjs`
+- `scripts/catalog-insights/application/catalog-display-policy.mjs`
+- `scripts/catalog-insights/gateways/github-sbom-gateway.mjs`
+
+## High-Level Design
+
+```mermaid
+flowchart TB
+   A[products.json] --> B[resolve enabled products]
+   B --> C[resolve team repos]
+   C --> D[fetch SBOM per repo]
+   C --> E[fetch Dependabot alerts if enabled]
+   C --> F[fetch code scanning alerts if enabled]
+   C --> G[resolve deployment ref]
+   D --> H[aggregate report per product]
+   E --> H
+   F --> H
+   G --> H
+   H --> I[apply display policy flags]
+   I --> J[write catalog_reports/*.json]
+   J --> K[Dev Portal UI]
+```
+
+## Triggers and Execution Paths
+
+### Scheduled or manual workflow
+
+Workflow file in implementation branch:
+
+- `.github/workflows/catalog-insights.yml`
+
+Trigger modes:
+
+- Scheduled: every Monday at 06:00 UTC
+- Manual: `workflow_dispatch`
+
+The workflow:
+
+1. Installs dependencies (`npm ci --ignore-scripts`)
+2. Generates a GitHub App token using:
+   - `DEV_PORTAL_GH_APP_ID`
+   - `DEV_PORTAL_GH_APP_PRIVATE_KEY`
+3. Runs `npm run catalog:sync`
+4. Uploads generated `content/products/catalog_reports/` artifacts
+5. Creates an automated PR with refreshed report files
+
+### Local or manual execution
+
+Run from the `ministry-of-justice-developer-portal` repository on `feat/product-catalog-sbom-report`:
+
+```bash
+export GITHUB_TOKEN=<github-token-with-required-access>
+make catalog-insights
+```
+
+Equivalent npm command:
+
+```bash
+npm run catalog:sync
+```
+
+Optional UI depth control used by the product details page:
+
+```bash
+export SBOM_MAX_DEPTH=2
+```
+
+## Prerequisites
+
+### Product enablement requirements
+
+In this POC branch, catalog generation is team-based (not `sbomOwner`/`sbomRepo` based).
+
+Each product entry that should be included must define:
+
+1. `catalogInsightsEnabled: true`
+2. `teamName: "<github-team-slug>"`
+
+Recommended optional flags:
+
+1. `teamOrg` (defaults to `ministryofjustice` when omitted)
+2. `catalogDeploymentEnvironment`
+3. `catalogShowVulnerabilities`
+4. `catalogShowCodeScanning`
+
+Example product configuration in `content/products/products.json`:
+
+```json
+{
+  "slug": "example-product",
+  "catalogInsightsEnabled": true,
+  "teamName": "example-team-slug",
+  "teamOrg": "ministryofjustice",
+  "catalogDeploymentEnvironment": "none",
+  "catalogShowVulnerabilities": true,
+  "catalogShowCodeScanning": true
+}
+```
+
+Products without `catalogInsightsEnabled: true` and `teamName` are skipped.
+
+### Current flag flexibility (include or omit sections)
+
+1. `catalogShowVulnerabilities`
+  - `true`: vulnerability data is fetched and shown in report/UI.
+  - `false` or unset: vulnerabilities are omitted from generated report output and hidden in UI tabs/overview rows.
+2. `catalogShowCodeScanning`
+  - `true`: code scanning data is fetched and shown in report/UI.
+  - `false` or unset: code scanning data is omitted from generated report output and hidden in UI tabs/overview rows.
+3. `catalogDeploymentEnvironment`
+  - String value like `prod`: deployment lookup tries this environment first, then falls back to unfiltered deployments.
+  - `none`: explicitly disables environment filtering and uses unfiltered deployment lookup.
+  - Unset: default deployment environment comes from `CATALOG_DEPLOYMENT_ENV` (default `prod`).
+
+### Authentication requirements
+
+For local/manual runs:
+
+- `GITHUB_TOKEN` must be set
+
+For workflow runs:
+
+- `DEV_PORTAL_GH_APP_ID` secret
+- `DEV_PORTAL_GH_APP_PRIVATE_KEY` secret
+
+Configured app:
+
+- MoJ Dev Portal SBOM App
+
+### Required GitHub access
+
+The token/app must be able to query:
+
+- Repository dependency graph SBOM endpoint
+- Dependabot alerts endpoint
+- Code scanning alerts endpoint
+- Team repository listings and deployments metadata used by catalog insights
+
+## Outputs
+
+Generated report files are written to:
+
+- `content/products/catalog_reports/index.json`
+- `content/products/catalog_reports/<product-slug>.json`
+
+Legacy files are removed during run:
+
+- `content/products/sbom-reports.json`
+- `content/products/catalog-report.json`
+- `content/products/sbom-sources.json`
+
+## How Details Are Displayed In Developer Portal
+
+Catalog insight data is rendered in two places:
+
+1. Products list cards (`/products`)
+2. Product detail tabs (`/products/[slug]`)
+
+### Products list page
+
+On `src/app/products/page.tsx`, each product card can show catalog summary data when report data exists:
+
+1. Catalog status
+2. Repository count
+3. Package count
+4. Generated timestamp
+5. Error text (when present)
+
+Card rendering is implemented in `src/components/ProductCard.tsx`.
+
+Filters that affect card visibility on this page:
+
+1. Category radio filters (`all`, `platforms`, `apis`, `tools`, `sbom`, `security`)
+2. Multi-select tag filters
+
+Intended use:
+
+1. Quick health snapshot per product
+2. Fast narrowing before viewing full insight tabs
+
+### Product detail page
+
+On `src/app/products/[slug]/page.tsx`, catalog insights are shown only when:
+
+1. `product.catalogInsightsEnabled === true`
+2. report data exists for the product slug
+
+Detail page sections, intent, and filters:
+
+1. Overview
+  - Intended use: product-level summary and readiness signal.
+  - Shows: status, completed/failed/pending counts, team, generation date, repository visibility totals, package total, ecosystem/license summary, optional security rollups.
+  - Filters: none.
+2. Repositories
+  - Intended use: repository-by-repository operational view.
+  - Shows: repo status, package count, ecosystems, deployment SHA/ref/environment/date.
+  - Filters: repository status dropdown (`all` + statuses present in data such as `public`, `private`, `internal`, `archived`, `unknown`).
+3. Ecosystems
+  - Intended use: package ecosystem composition.
+  - Shows: ecosystem names and package counts.
+  - Filters: none.
+4. Licenses
+  - Intended use: licensing profile and risk visibility.
+  - Shows: license names and package counts.
+  - Filters: none.
+5. Vulnerabilities
+  - Intended use: Dependabot vulnerability triage.
+  - Visibility: shown only when `catalogShowVulnerabilities === true`.
+  - Shows: grouped package-level severity, observed/fixed versions, CVE/CVSS, repository.
+  - Filters: severity dropdown and repository dropdown.
+6. Code scanning
+  - Intended use: static-analysis alert triage.
+  - Visibility: shown only when `catalogShowCodeScanning === true`.
+  - Shows: severity, rule, repository, location, tool, alert link.
+  - Filters: severity dropdown and repository dropdown.
+7. Packages
+  - Intended use: dependency inventory and footprint across repositories.
+  - Shows: package metadata (version, ecosystem, license, purpose, supplier) and associated repositories.
+  - Filters: ecosystem dropdown.
+
+Feature flags that control include/omit behavior:
+
+1. `catalogShowVulnerabilities`
+  - `true`: vulnerabilities are fetched and the Vulnerabilities section is shown.
+  - `false` or unset: vulnerabilities are omitted from report output and hidden in UI.
+2. `catalogShowCodeScanning`
+  - `true`: code scanning alerts are fetched and the Code scanning section is shown.
+  - `false` or unset: code scanning data is omitted from report output and hidden in UI.
+
+Data path from generation to UI:
+
+1. `content/products/catalog_reports/index.json` feeds product-card summary data.
+2. `content/products/catalog_reports/<slug>.json` feeds product detail tabs.
+3. Page logic maps data by slug and applies feature-flag visibility rules.
+
+## Troubleshooting
+
+### 1. SBOM fetch is skipped
+
+Symptom:
+
+- Logs contain: `Skipping SBOM fetch: GITHUB_TOKEN is not set.`
+
+Action:
+
+1. Export `GITHUB_TOKEN` before running locally.
+2. For workflow runs, check GitHub App token generation step succeeded.
+
+### 2. Workflow key parsing fails
+
+Symptom:
+
+- Workflow fails in "Prepare GitHub App private key" or "Generate GitHub App token".
+
+Action:
+
+1. Re-check `DEV_PORTAL_GH_APP_PRIVATE_KEY` formatting in GitHub secrets.
+2. Confirm the key matches `DEV_PORTAL_GH_APP_ID`.
+
+### 3. Empty or partial product reports
+
+Symptom:
+
+- Product report exists but missing expected repositories or package data.
+
+Action:
+
+1. Confirm `catalogInsightsEnabled: true` and a valid `teamName` in `products.json`.
+2. Confirm the repository has dependency graph data available.
+3. Re-run workflow manually and inspect per-product output in generated JSON files.
+
+### 4. Security endpoints are skipped
+
+Symptom:
+
+- Warnings appear for Dependabot/code-scanning fetch calls with HTTP `403` or `404`.
+
+Action:
+
+1. Validate token/app access to repository security endpoints.
+2. Confirm security features are enabled for target repositories where expected.
+
+### 5. Product not included in generated catalog reports
+
+Symptom:
+
+- Product does not appear in generated `catalog_reports/index.json` or product-specific report file is missing.
+
+Action:
+
+1. Confirm `catalogInsightsEnabled: true`.
+2. Confirm `teamName` exists and matches a valid GitHub team slug.
+3. Confirm token/app can list team repositories.
+4. Re-run catalog workflow manually and inspect logs for team repository resolution.
+
+## Operational Notes
+
+1. This runbook is specific to the POC branch implementation and should be updated when changes are promoted to `main`.
+2. Generated report files are intended to be reviewed through the workflow-created PR before merge.
+3. Prefer running the scheduled workflow for regular refresh and manual dispatch for validation or incident response.
+4. Keep this runbook aligned with the implementation branch while POC work remains outside `main`.
+
+## Support
+
+- Primary support: Developer Experience Team
+- Slack channel: `#developer-experience-alerts`

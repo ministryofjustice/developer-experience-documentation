@@ -1,0 +1,55 @@
+---
+name: Validate Docs
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  validate-build-artifact:
+    name: Validate Build Artifact
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ministryofjustice/tech-docs-github-pages-publisher@sha256:8b00235edfa4d1248e3cdd08c022d5f398c7f4abb3315b6078f1e876214a171e # v6.2.0
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Package Site
+        id: package_site
+        run: |
+          /usr/local/bin/package
+
+      - name: Unpack Artifact
+        id: unpack_artifact
+        run: |
+          mkdir -p out
+          tar -xf artifact.tar -C out
+
+      - name: Verify Critical Routes
+        id: verify_critical_routes
+        run: |
+          sh scripts/verify-artifact.sh out config/critical-routes.txt
+
+      - name: Verify Navigation Links Resolve To Output
+        id: verify_navigation_links
+        run: |
+          sh scripts/verify-nav-links.sh out source/index.html.md.erb
+
+      - name: Upload Built Site Snapshot
+        id: upload_built_snapshot
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: built-site-snapshot
+          path: out
+          retention-days: 1
+          overwrite: true
