@@ -1,0 +1,76 @@
+---
+owner_slack: "#developer-experience-team"
+title: GitHub Actions Cloud Authentication Credential Usage
+last_reviewed_on: 2026-07-17
+review_in: 6 months
+---
+
+# GitHub Actions Cloud Authentication Credential Usage
+
+## Summary
+
+To be effective, GitHub Actions workflows that authenticate to a cloud provider must do so without storing long-lived static credentials. 
+This standard defines how all MoJ teams using GitHub Actions in the ministryofjustice organisation must authenticate to AWS, Azure, and GCP, so the organisation has reliable, auditable assurance over its cloud credential posture and teams have a single clear answer to “how should my pipeline authenticate to the cloud?” 
+
+## Requirements
+
+This standard is made up of the following requirements: 
+
+1. [A workflow MUST authenticate via OIDC, not long-lived credentials](#1-authenticating-via-oidc)
+2. [Teams MUST distinguish the identity provider from the credential mechanism](#2-distinguishing-the-identity-provider-from-the-credential-mechanism)
+3. [Workflows MUST set `id-token: write` when using OIDC](#3-workflows-must-set-id-token-write-when-using-oidc)
+4. [Long-lived credentials MUST NOT be used except under a logged exception](#4-long-lived-credentials-must-not-be-used-except-under-a-logged-exception)
+5. [High-blast-radius repositories MUST be classified as Risk Assets](#5-high-blast-radius-repositories-must-be-classified-as-risk-assets)
+6. [Credentials and variables MUST follow the standard naming convention](#6-credentials-and-variables-must-follow-the-standard-naming-convention)
+7. [Flagged repositories MUST be resolved against the verification process](#7-flagged-repositories-must-be-resolved-against-the-verification-process)
+8. [Cloud authentication posture MUST be continuously monitored](#8-cloud-authentication-posture-must-be-continuously-monitored)
+
+## 1. Authenticating via OIDC
+
+GitHub Actions workflows that authenticate to a cloud provider MUST use OpenID Connect (OIDC) federated identity. 
+They MUST NOT use long-lived static credentials (AWS access keys, Azure client secrets, GCP service account keys) stored as repository or organisation secrets, except under a logged exception as set out below.
+
+OIDC exchanges a short-lived signed token for cloud credentials at the moment they are needed. 
+The cloud provider validates the token’s repository, branch, environment and other claims before issuing a session that typically expires within an hour. 
+This is preferred over long-lived credentials for five reasons:
+
+1. **No persistent secret to leak:** Nothing static is stored in GitHub, so a log dump, malicious dependency, or compromised contributor cannot exfiltrate what does not exist. 
+2. **Automatic Expiry:** A leaked token has minutes of utility, not months. 
+3. **Scoped Trust:** The cloud-side trust policy can require specific repository, branch, ref or environment claims; a token issued to a feature branch cannot assume a role intended for main. 
+4. **No Rotation Burden:** There are no keys to rotate, audit, or accidentally let expire. 
+5. **Cleaner audit trail:** Each token exchange is logged with the originating repository and run.
+
+This aligns with the NCSC cloud security guidance principle of minimising the lifetime and blast radius of credentials, and with the GDS Service Standard requirement to manage information risk.
+
+Continued use of long-lived credentials exposes MoJ to credential exfiltration through logs and supply-chain dependencies, stale and over-privileged secrets, lateral movement from leaked keys usable anywhere on the internet, a detection gap where keys surface publicly before they are noticed, and dormant-credential risk where a key left in repository settings after migration remains fully exploitable until deleted.
+
+## 2. Distinguishing the Identity Provider from the Credential Mechanism
+
+## 3. Workflows Using `id-token: write` When Using OIDC
+
+## 4. Exceptions for Long-lived Credentials
+
+## 5. Identifying High-Blast-Radius Repositories
+
+## 6. Credential and Variable Naming Convention
+
+## 7. Flagged Repositories and the Verification Process
+
+## 8. Continuous Monitoring of Cloud Authentication Posture
+
+
+## Appendix A - Migration Walkthrough (AWS)
+
+This appendix is informative. It shows the standard AWS migration path; equivalent flows for Azure and GCP are linked in the [References](#references).
+
+# 1. Verify the OIDC identity provider is available in the AWS Account. If not, it can be created by the bel
+
+## References
+
+- [About security hardening with OpenID Connect ](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [Configuring OpenID Connect in Amazon Web Services](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
+- [Azure: Workload identity federation with GitHub Actions ](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation-config-app-trust-github)
+- [GCP: Workload Identity Federation with Deployment pipelines](https://cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines)
+- [Microsoft: Authentication vs Authorization](https://learn.microsoft.com/en-us/entra/identity-platform/authentication-vs-authorization)
+- [NCSC cloud security guidance](https://www.ncsc.gov.uk/collection/cloud)
+- [GDS Service Standard](https://www.gov.uk/service-manual/service-standard)
