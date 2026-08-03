@@ -47,9 +47,9 @@ This standard is built upon
 - define and adopt a clear definition for “archived”
 - introduce signal-based criteria to identify archival candidates for review
 - implement a mandatory process for archival including
-  - Removal of secrets and tokens,
-  - Disabling workflows and interactions,
-  - Closure of issues and pull requests.
+  - removal of secrets and tokens,
+  - disabling workflows and interactions,
+  - closing of issues and pull requests.
 - default archived repositories to a private visibility
 - introduce regular review cycles to identify candidates and maintain standards
 - consider segregation of archived and active repositories for clarity and governance
@@ -153,42 +153,42 @@ In these cases, repositories may be retained as active or classified with adhoc 
 
 To remain consistent, an archival process which is repeatable and clearly defined is required broken down into:
 
-1. Pre-archival checks
-2. Security and deactivation
-3. Access control
-4. Application of status
-5. Relocation.
+1. pre-archival checks
+2. security and deactivation
+3. access control
+4. application of status
+5. relocation.
 
 ### 1. Pre-archival checks
 
-- Confirm usage and mandatory criteria,
-- Identify current (or candidate) CODEOWNERS,
-- Verify no downstream consumers,
-- Triage and close open issues/pull requests,
-- Update README with:
-  - Archival status,
-  - Reason for archival,
-  - Date of archival.
+- confirm usage and mandatory criteria,
+- identify current (or candidate) CODEOWNERS,
+- verify no downstream consumers,
+- triage and close open issues/pull requests,
+- update README with:
+  - archival status,
+  - reason for archival,
+  - date of archival.
 
 ### 2. Security and deactivation
 
-- Remove all secrets (AWS, repository, environment),
-- Revoke any tokens and credentials,
-- Disable GitHub Actions,
-- Remove/disable any webhooks and external integrations,
-- Disable any relevant GitHub Apps,
-- Decommission in cloud platform.
+- remove all secrets (AWS, repository, environment),
+- revoke any tokens and credentials,
+- disable GitHub Actions,
+- remove/disable any webhooks and external integrations,
+- disable any relevant GitHub Apps,
+- decommission in cloud platform.
 
 ### 3. Access control
 
-- Review visibility and set to private/internal.
-- Ensure no data is exposed.
-- Restrict write access.
+- review visibility and set to private/internal.
+- ensure no data is exposed.
+- restrict write access.
 
 ### 4. Application of status
 
-- Apply the GitHub archive flag,
-- Confirm the repository is made read-only,
+- apply the GitHub archive flag,
+- confirm the repository is made read-only,
 
 ### 5. (Optional) relocation
 
@@ -196,18 +196,18 @@ Consider moving the repository to a dedicated archival organisation.
 
 Benefits of relocation to an archive organisation include
 
-- Reduced congestion of the primary Ministry of Justice GitHub organisation
-- Clear management and separation of active and inactive services
-- Application of stricter governance which can be implemented with greater ease
+- reduced congestion of the primary Ministry of Justice GitHub organisation
+- clear management and separation of active and inactive services
+- application of stricter governance which can be implemented with greater ease
 
 ## Archive management
 
 Archived repositories should be:
 
-- Readable internally,
-- Not modified,
-- Not contain integrations of secrets,
-- Not be in production.
+- readable internally,
+- not modified,
+- not contain integrations of secrets,
+- not be in production.
 
 Should any of this change for any reason, the repository should undergo a formal de-archival process.
 
@@ -217,12 +217,12 @@ This process is recommended as an outline only and should not be common practice
 Ultimately, archival should be considered final and irrevocable except in extreme or extenuating circumstances.
 The following steps must be followed
 
-- A clear justification provided
-- Approval obtained from relevant stakeholders
-- Ownership assigned (if not already present) or reassigned
-- A security review conducted
-- Pipelines, dependencies, and integrations revalidated
-- Migrated back to the main organisation
+- a clear justification provided
+- approval obtained from relevant stakeholders
+- ownership assigned (if not already present) or reassigned
+- a security review conducted
+- pipelines, dependencies, and integrations revalidated
+- migrated back to the main organisation
 
 ### Dependency Considerations
 
@@ -239,7 +239,7 @@ For archived repositories ownership may remain with the original team or be tran
 
 An exercise must be regularly undertaken to identify new candidates for archival and review existing archived repositories.
 It is recommended this is scheduled quarterly with cadence reviewed annually.
-Whilst a cadence is defined for formal checks, a repository can be migrated to archived at any point by the repository's `CODEOWNERS` subject to the defined critera.
+Whilst a cadence is defined for formal checks, a repository can be migrated to archived at any point by the repository's `CODEOWNERS` subject to the defined criteria.
 
 ### The following enforcement mechanisms are recommended
 
