@@ -1,0 +1,248 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: GitHub repository archival standard
+last_reviewed_on: 2026-07-24
+review_in: 6 months
+---
+
+# GitHub repository archival standard
+
+## Executive summary
+
+### Overview
+
+The current GitHub estate contains over 4,000 repositories, with more than half marked as archived. The use of archiving is inconsistent and lacks defined standards.
+
+This results in
+
+- huge volumes of stale repositories
+- possible security risks from public archived repositories with retained secrets
+- reduced visibility of active, maintained services
+- Gaps in ownership and governance
+- possible FinOps considerations
+- inappropriately managed services
+
+Without a consistent approach, archived repositories may expose risk and generate operational noise.
+
+### Proposal
+
+Introduce a standardised approach to archival across MOJ including
+
+- clear criteria for when a repository should be archived
+- a defined archival process
+- security standards to ensure archived repositories are non-operational
+- governance and review standards for compliance management
+
+### Key principles
+
+This standard is built upon
+
+- **safety first:** archived repositories must not contain active secrets, deployments, integrations, pipelines, workflows, or actions
+- **clarity:** active and inactive repositories should be clearly distinguishable
+- **signals for archival:** archival is based upon a combination of usage, ownership, and operational signals vs arbitrary timelines
+- **controlled lifecycles:** archival/unarchiving should be defined procedures
+
+### Key recommendations
+
+- define and adopt a clear definition for “archived”
+- introduce signal-based criteria to identify archival candidates for review
+- implement a mandatory process for archival including
+  - removal of secrets and tokens,
+  - disabling workflows and interactions,
+  - closing of issues and pull requests.
+- default archived repositories to a private visibility
+- introduce regular review cycles to identify candidates and maintain standards
+- consider segregation of archived and active repositories for clarity and governance
+
+### Key benefits
+
+- reduced security exposure
+- reduced attack surface
+- improved visibility
+- stronger ownership and governance
+- reduced estate complexity
+- reduced operational overhead
+- potential for **FinOps**/**GreenOps** optimisation
+
+## Context and problem statement
+
+The current GitHub estate for the `ministryofjustice` organisation contains approximately
+
+- 4,600 repositories
+- 2,400 archived repositories (~52%)
+- 1,400 public archived repositories (~30% of total, ~58% of archived)
+
+There is currently no consistent definition of what “archived” means, and the archive flag is applied inconsistently.
+
+As a result
+
+- archived repositories may still contain open issues and pull requests
+- secrets, tokens, integrations, workflows, deployments, and/or pipelines may remain active 
+- public archived repositories increase exposure risk
+- ownership is unclear or absent for many repositories
+- an unusually large portion of the estate is stale, reducing visibility of active services
+
+This creates
+
+- security risks
+- operational noise
+- governance and ownership gaps
+
+## Objectives
+
+This standard aims to introduce a standardised approach to archival including
+
+- defining a clear and consistent standard for repository archival
+- establishing signals and criteria for identifying archival candidates
+- defining a safe and controlled archival process
+- introducing governance and review mechanisms
+- reducing estate noise while improving security and clarity
+
+We must also consider how to implement this incrementally to apply to the current estate.
+
+## Definition of 'archived'
+
+A repository is considered archived when it is no longer actively developed, deployed, or required for operational use, and is retained only for reference, audit, or historical purposes.
+
+An archived repository must be
+
+- immutable (no further changes expected - or possible)
+- non-executable (no pipelines, deployments, or integrations)
+- non-sensitive (no active secrets or credentials)
+- remain clearly owned (CODEOWNERS must be defined, and a team assigned to the repository)
+
+## Signals of candidacy for archival
+
+To monitor candidacy for archival, we should define signal-based criteria to identify and manage archival processes.
+This proposal focuses on setting the ongoing standards, recommendations for managing the current estate in its existing format will be provided via addendum.
+
+Archival should occur when multiple signals are displayed. All mandatory signals (bold) must be present for archival.
+
+### Activity Signals
+
+- no commits within a period of 12 months,
+- no recent pull requests,
+- no active contributors.
+
+### Operational Signals
+
+- **no active deployments**
+- **no linked environment/namespace**
+- **no CI/CD relevance**
+
+### Usage Signals
+
+- low/no traffic (clones, views, forks, etc.)
+- **no dependencies (internal or external)**
+
+### Ownership Signals
+
+- **no active owners (CODEOWNERS or team)**
+- service is retired or replaced by another service
+
+### Edge Cases
+
+Some repositories will trigger a candidacy for archival erroneously.
+In these cases, repositories may be retained as active or classified with adhoc labels to indicate their status. Examples include:
+
+- libraries infrequently updated but still in use,
+- infrastructure used only for bootstrapping or initialisation of other services,
+- template repositories
+
+## Proposed archival process
+
+To remain consistent, an archival process which is repeatable and clearly defined is required broken down into:
+
+1. pre-archival checks
+2. security and deactivation
+3. access control
+4. application of status
+5. relocation.
+
+### 1. Pre-archival checks
+
+- confirm usage and mandatory criteria,
+- identify current (or candidate) CODEOWNERS,
+- verify no downstream consumers,
+- triage and close open issues/pull requests,
+- update README with:
+  - archival status,
+  - reason for archival,
+  - date of archival.
+
+### 2. Security and deactivation
+
+- remove all secrets (AWS, repository, environment),
+- revoke any tokens and credentials,
+- disable GitHub Actions,
+- remove/disable any webhooks and external integrations,
+- disable any relevant GitHub Apps,
+- decommission in cloud platform.
+
+### 3. Access control
+
+- review visibility and set to private/internal.
+- ensure no data is exposed.
+- restrict write access.
+
+### 4. Application of status
+
+- apply the GitHub archive flag,
+- confirm the repository is made read-only,
+
+### 5. (Optional) relocation
+
+Consider moving the repository to a dedicated archival organisation.
+
+Benefits of relocation to an archive organisation include
+
+- reduced congestion of the primary Ministry of Justice GitHub organisation
+- clear management and separation of active and inactive services
+- application of stricter governance which can be implemented with greater ease
+
+## Archive management
+
+Archived repositories should be:
+
+- readable internally,
+- not modified,
+- not contain integrations of secrets,
+- not be in production.
+
+Should any of this change for any reason, the repository should undergo a formal de-archival process.
+
+## De-archival process
+
+This process is recommended as an outline only and should not be common practice.
+Ultimately, archival should be considered final and irrevocable except in extreme or extenuating circumstances.
+The following steps must be followed
+
+- a clear justification provided
+- approval obtained from relevant stakeholders
+- ownership assigned (if not already present) or reassigned
+- a security review conducted
+- pipelines, dependencies, and integrations revalidated
+- migrated back to the main organisation
+
+### Dependency Considerations
+
+Before archiving, it must be confirmed if the repository is consumed by other repositories or is used in build or deployment processes.
+If dependencies exist, then consumers must be migrated away, or the repository should remain active and supported.
+
+### Governance and Ownership
+
+All repositories should have a defined owner and where ownership cannot be identified, repositories should be flagged and reviewed.  
+
+For archived repositories ownership may remain with the original team or be transferred to a central governance or platform team depending on the situation.
+
+### Review and Enforcement
+
+An exercise must be regularly undertaken to identify new candidates for archival and review existing archived repositories.
+It is recommended this is scheduled quarterly with cadence reviewed annually.
+Whilst a cadence is defined for formal checks, a repository can be migrated to archived at any point by the repository's `CODEOWNERS` subject to the defined criteria.
+
+### The following enforcement mechanisms are recommended
+
+- Automated reporting to identify repositories with no activity/owner. Archived repositories which do not currently meet archival criteria.
+- Dashboards (in the developer portal) to create visibility of active and archived repositories alongside compliance with standards.
+- In conjunction with mandated code owners, teams can be held accountable for inappropriately archived repositories.
