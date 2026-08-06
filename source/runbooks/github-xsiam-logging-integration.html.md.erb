@@ -41,11 +41,11 @@ To follow this section of the runbook, you must be a GitHub Enterprise Owner.
 
 ## Questions / Limitations
 
-### Why not use a Fine-Grained PAT?
+### Why Not Use a Fine-Grained PAT?
 
 This process was initially attempted with a fine-grained PAT. Through testing, we found it could not read the enterprise audit logs as expected. This may be worth retesting at a later date.
 
-### Why not use a GitHub App?
+### Why Not Use a GitHub App?
 
 As specified in the [XSIAM GitHub Event Collector Docs](https://xsoar.pan.dev/docs/reference/integrations/github-event-collector), and what we discovered while testing, the XSIAM does not support the use of GitHub apps and requires a long-lived token.
 
@@ -55,7 +55,7 @@ In GitHub, you can have custom roles at the enterprise level. There is an enterp
 
 The only other option would be to make the MIP team Enterprise Admins which is far to much privilege for this use case.
 
-### Why not stream the logs to an S3 bucket?
+### Why Not Stream The Logs to an S3 Bucket?
 
 GitHub ahas the ability to stream the logs into an S3 bucket, using OIDC for authentication rather than long-lived credentials. We could then setup a trust boundary with XSIAM so they can ingest the logs without having to store any long-lived credentials.
 
