@@ -1,0 +1,63 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: GitHub to XSIAM Logging Integration
+last_reviewed_on: 2026-08-06
+review_in: 6 months
+---
+
+# GitHub to XSIAM Logging Integration
+
+## Purpose
+
+XSIAM is the MoJs chosen Security Operations Platform, all major platforms are required to enable log ingestion into it, including GitHub.
+
+This runbook describes the current logging architecture and how to continue to ensure it stays operational.
+
+## Audience
+
+This runbook is primarily for:
+
+* **Developer Experience (DevX) engineers**: to ensure the integration stays operable.
+
+## Architecture
+
+The current architecture only depends on a Classic Personal Access Token (PAT), with `read:audit_log` created by an GitHub Enterprise Admin.
+
+This token is used by XSIAMs [GitHub Event Collector](https://xsoar.pan.dev/docs/reference/integrations/github-event-collector) to periodically poll [GitHub Enterprise Audit Logs API](https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/using-the-audit-log-api-for-your-enterprise) for ingestion.
+
+Since the integration queries the Enterprise Audit Logs, this means all GitHub events and git events from all organisaitons are ingested into XSIAM via this one integration.
+
+## How to Rotate the Enterprise Classic PAT Token
+
+To follow this section of the runbook, you must be a GitHub Enterprise Owner.
+
+1. Go to <https://github.com/settings/tokens/new>
+2. Give the token as sensible name such as `moj-github-to-xsiam-logging-integration`
+3. **Important:** only give the token the `read:audit_log` scope - no other permissions are required.
+4. **Important:** Ensure the token expiration date is no longer than 90 days in the future.
+5. Store the GitHub PAT in 1Password as a secure note (this will be important for sharing the token later).
+6. Email <monitoring-and-integration-platform@justice.gov.uk> letting them know that the GitHub Token that supports the GitHub Log Ingestion into XSIAM is about to expire and you have a new token for them.
+7. Once you get a response from a team member, go to your 1Password Secure Note and share it with the team members email and send them the link
+8. The Monitoring and Integration Platform team member should confirm the new token is working as expected.
+
+## Questions / Limitations
+
+### Why Not Use a Fine-Grained PAT?
+
+This process was initially attempted with a fine-grained PAT. Through testing, we found it could not read the enterprise audit logs as expected. This may be worth retesting at a later date.
+
+### Why Not Use a GitHub App?
+
+As specified in the [XSIAM GitHub Event Collector Docs](https://xsoar.pan.dev/docs/reference/integrations/github-event-collector), and what we discovered while testing, the XSIAM does not support the use of GitHub apps and requires a long-lived token.
+
+### Why not give the MIP Team Access to Generate Their Own Tokens?
+
+In GitHub, you can have custom roles at the enterprise level. There is an enterprise-auditor team with the permissions to read the audit logs, although, through testing this, the generated token still did not seem to have the relevant permissions. This is worth testing again.
+
+The only other option would be to make the MIP team Enterprise Admins which is far to much privilege for this use case.
+
+### Why Not Stream The Logs to an S3 Bucket?
+
+GitHub ahas the ability to stream the logs into an S3 bucket, using OIDC for authentication rather than long-lived credentials. We could then setup a trust boundary with XSIAM so they can ingest the logs without having to store any long-lived credentials.
+
+This method would require some additional infrastructure and something to look into later down the line.
