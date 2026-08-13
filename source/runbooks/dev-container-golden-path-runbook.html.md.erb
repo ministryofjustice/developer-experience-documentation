@@ -5,10 +5,10 @@ last_reviewed_on: 2026-08-12
 review_in: 6 months
 ---
 
-# Setting up a dev container for your repository - Golden Path runbook
+# Setting up a dev container for your repository - golden path runbook
 
 
-Use a dev container to get a consistent, ready-to-use development environment for any MOJ GitHub repository.
+Use a dev container to get a consistent, ready-to-use development environment for any Ministry of Justice (**MOJ**) GitHub repository.
 
 ## Overview
 
@@ -28,8 +28,8 @@ flowchart LR
 
 ## Prerequisites
 
-- Docker as the container engine.
-- Podman also works: tested MOJ base image pull, features, workspace mount, post-create script.
+- Docker as the container engine
+- Podman also works: tested MOJ base image pull, features, workspace mount, post-create script
 
 ## What this runbook consists of
 
@@ -39,36 +39,36 @@ flowchart LR
 
 ## Checklist - complete before writing any files
 
-### 1. What does the repository actually need
+### What does the repository actually need
 
-- [ ] Check for `pyproject.toml`, `requirements.txt`, `Pipfile` - confirms Python and which package manager
-- [ ] Check for `package.json` - confirms Node and which package manager
-- [ ] Check `.github/workflows/*.yml` for the language versions and tools CI actually installs and runs
-- [ ] Check the `Makefile` or equivalent for local task commands (for example `make check`)
-- [ ] Confirm whether the repository has any Terraform, AWS, or Kubernetes code
+- [ ] check for `pyproject.toml`, `requirements.txt`, `Pipfile` - confirms Python and which package manager
+- [ ] check for `package.json` - confirms Node and which package manager
+- [ ] check `.github/workflows/*.yml` for the language versions and tools CI actually installs and runs
+- [ ] check the `Makefile` or equivalent for local task commands (for example `make check`)
+- [ ] confirm whether the repository has any Terraform, AWS, or Kubernetes code
 
-### 2. Which of the features apply
+### Which of the features apply
 
 Check there is real evidence a feature is needed, not just that it is available.
 
 | Feature | Only include if |
 |---|---|
-| apm | Repository needs Microsoft's Agent Package Manager CLI |
-| astral | Repository uses `uv` or `ruff` |
-| aws | Repository interacts with AWS directly (not just hosted there) |
-| cloud-platform | Repository is deployed to MOJ Cloud Platform |
-| container-structure-test | Repository builds and tests container images (also pulls in the community `docker-in-docker` feature) |
-| kubernetes | Repository manages Kubernetes manifests or Helm charts directly |
-| static-analysis | Repository contains infrastructure-as-code to scan |
-| terraform | Repository contains Terraform code |
+| apm | repository needs Microsoft's Agent Package Manager CLI |
+| astral | repository uses `uv` or `ruff` |
+| aws | repository interacts with AWS directly (not just hosted there) |
+| cloud-platform | repository is deployed to MOJ Cloud Platform |
+| container-structure-test | repository builds and tests container images (also pulls in the community `docker-in-docker` feature) |
+| kubernetes | repository manages Kubernetes manifests or Helm charts directly |
+| static-analysis | repository contains infrastructure-as-code to scan |
+| terraform | repository contains Terraform code |
 
 `cloud-platform` automatically pulls in `kubernetes` with `kubectl` pinned to a specific version. Do not add `kubernetes` separately unless you understand this.
 
-### 3. Using features not in the MOJ list
+### Using features not in the MOJ list
 
 For language runtimes and general tools, for example Python, Node, use the community features directory instead: containers.dev/features.
 
-Community features are referenced the same way as MOJ features, just with a different registry path:
+Community features are referenced the same way as MOJ features, just with a different registry path.
 
 ````json
 "features": {
@@ -79,19 +79,19 @@ Community features are referenced the same way as MOJ features, just with a diff
 
 You can mix MOJ and community features in the same `features` block.
 
-### 4. Cross-check for inconsistency
+### Cross-check for inconsistency
 
 Only applies if the relevant file exists in the repository.
 
-- [ ] If a `package.json` exists, does its engines field match what a dependency actually needs?
-- [ ] Does a CI workflow install a different tool version than what's declared elsewhere?
-- [ ] Is a tool referenced in setup that CI does not actually use?
+- [ ] if a `package.json` exists, does its engines field match what a dependency actually needs?
+- [ ] does a CI workflow install a different tool version than what's declared elsewhere?
+- [ ] is a tool referenced in setup that CI does not actually use?
 
-### 5. Before you commit
+### Before you commit
 
-- [ ] Run the generated `devcontainer.json` locally with `devcontainer up`
-- [ ] Confirm `post-create.sh` completes without error
-- [ ] Confirm any tool installed locally matches the version CI uses
+- [ ] run the generated `devcontainer.json` locally with `devcontainer up`
+- [ ] confirm `post-create.sh` completes without error
+- [ ] confirm any tool installed locally matches the version CI uses
 
 ## Template files
 
@@ -156,7 +156,7 @@ Prefer the terminal, or a different editor? Use the [devcontainer CLI](https://g
 ## What's inside
 
 - Base image: `ghcr.io/ministryofjustice/devcontainer-base:TAG_HERE` — replace `TAG_HERE` with the current version tag
-- The shared Ministry of Justice base image, maintained by the Dev Container Community of Practice.
+- The shared MOJ base image, maintained by the Dev Container Community of Practice.
 - Runs as a non-root `vscode` user by design.
 ````
 
