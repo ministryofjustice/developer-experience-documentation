@@ -30,6 +30,7 @@ flowchart LR
 
 - Docker as the container engine
 - Podman also works: tested MOJ base image pull, features, workspace mount, post-create script
+- Visual Studio Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers), or the [devcontainer CLI](https://github.com/devcontainers/cli) if working from the terminal
 
 ## What this runbook consists of
 
@@ -98,6 +99,8 @@ Only applies if the relevant file exists in the repository.
 Copy and customise these files for your repository.
 
 ### devcontainer.json
+
+Find the current base image tag at [ghcr.io/ministryofjustice/devcontainer-base](https://github.com/ministryofjustice/.devcontainer/pkgs/container/devcontainer-base).
 
 ````json
 {
