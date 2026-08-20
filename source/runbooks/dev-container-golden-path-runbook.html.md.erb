@@ -1,0 +1,177 @@
+---
+owner_slack: "#devcontainer-community"
+title: Dev container Golden Path runbook
+last_reviewed_on: 2026-08-12
+review_in: 6 months
+---
+
+# Setting up a dev container for your repository - golden path runbook
+
+
+Use a dev container to get a consistent, ready-to-use development environment for any Ministry of Justice (**MOJ**) GitHub repository.
+
+## Overview
+
+````mermaid
+flowchart LR
+    A[Read the runbook] --> B[Understand the checklist<br/>and your repo's prerequisites]
+    B --> C[Copy the template files<br/>and edit to fit your repo]
+    C --> D[Test and commit]
+````
+
+## Why use this runbook
+
+- less time to ship a working dev container environment for your repository
+- use the shared Ministry of Justice base image `ghcr.io/ministryofjustice/devcontainer-base:TAG_HERE` rather than writing a custom Dockerfile
+- automatic access to security updates maintained on the base image
+- a consistent environment across MOJ repositories
+
+## Prerequisites
+
+- Docker as the container engine
+- Podman also works: tested MOJ base image pull, features, workspace mount, post-create script
+- Visual Studio Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers), or the [devcontainer CLI](https://github.com/devcontainers/cli) if working from the terminal
+
+## What this runbook consists of
+
+- `.devcontainer/devcontainer.json` - defines the base image, features and setup command
+- `.devcontainer/post-create.sh` - runs once when the container is built, installs tools not covered by a feature
+- `.devcontainer/README.md` - short usage note for contributors
+
+## Checklist - complete before writing any files
+
+### What does the repository actually need
+
+- [ ] check for `pyproject.toml`, `requirements.txt`, `Pipfile` - confirms Python and which package manager
+- [ ] check for `package.json` - confirms Node and which package manager
+- [ ] check `.github/workflows/*.yml` for the language versions and tools CI actually installs and runs
+- [ ] check the `Makefile` or equivalent for local task commands (for example `make check`)
+- [ ] confirm whether the repository has any Terraform, AWS, or Kubernetes code
+
+### Which of the features apply
+
+Check there is real evidence a feature is needed, not just that it is available.
+
+| Feature | Only include if |
+|---|---|
+| apm | repository needs Microsoft's Agent Package Manager CLI |
+| astral | repository uses `uv` or `ruff` |
+| aws | repository interacts with AWS directly (not just hosted there) |
+| cloud-platform | repository is deployed to MOJ Cloud Platform |
+| container-structure-test | repository builds and tests container images (also pulls in the community `docker-in-docker` feature) |
+| kubernetes | repository manages Kubernetes manifests or Helm charts directly |
+| static-analysis | repository contains infrastructure-as-code to scan |
+| terraform | repository contains Terraform code |
+
+`cloud-platform` automatically pulls in `kubernetes` with `kubectl` pinned to a specific version. Do not add `kubernetes` separately unless you understand this.
+
+### Using features not in the MOJ list
+
+For language runtimes and general tools, for example Python, Node, use the community features directory instead: containers.dev/features.
+
+Community features are referenced the same way as MOJ features, just with a different registry path.
+
+````json
+"features": {
+  "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+  "ghcr.io/ministryofjustice/devcontainer-feature/astral:1": {}
+}
+````
+
+You can mix MOJ and community features in the same `features` block.
+
+### Cross-check for inconsistency
+
+Only applies if the relevant file exists in the repository.
+
+- [ ] if a `package.json` exists, does its engines field match what a dependency actually needs?
+- [ ] does a CI workflow install a different tool version than what's declared elsewhere?
+- [ ] is a tool referenced in setup that CI does not actually use?
+
+### Before you commit
+
+- [ ] run the generated `devcontainer.json` locally with `devcontainer up`
+- [ ] confirm `post-create.sh` completes without error
+- [ ] confirm any tool installed locally matches the version CI uses
+
+## Template files
+
+Copy and customise these files for your repository.
+
+### devcontainer.json
+
+Find the current base image tag at [ghcr.io/ministryofjustice/devcontainer-base](https://github.com/ministryofjustice/.devcontainer/pkgs/container/devcontainer-base).
+
+````json
+{
+  "name": "REPO_NAME_HERE",
+  "image": "ghcr.io/ministryofjustice/devcontainer-base:TAG_HERE",
+  "features": {
+    // Add only the features this repository needs.
+    // See the checklist above before choosing any.
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  }
+}
+````
+
+### post-create.sh
+
+````bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Dev container setup starting"
+
+# Add setup steps here based on the checklist above.
+# Pin any downloaded tool version and verify with a checksum where possible.
+
+echo "Dev container setup complete"
+````
+
+### README.md
+
+````markdown
+# Dev container
+
+This repository uses a dev container for local development.
+
+## Prerequisites
+
+- Docker, or Podman
+- Visual Studio Code
+  - [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+## Getting started
+
+To launch locally, ensure the prerequisites are met, then select "Reopen in Container" when prompted, or run:
+
+```bash
+devcontainer up --workspace-folder .
+```
+
+Prefer the terminal, or a different editor? Use the [devcontainer CLI](https://github.com/devcontainers/cli) directly, no VS Code required.
+
+## What's inside
+
+- Base image: `ghcr.io/ministryofjustice/devcontainer-base:TAG_HERE` — replace `TAG_HERE` with the current version tag
+- The shared MOJ base image, maintained by the Dev Container Community of Practice.
+- Runs as a non-root `vscode` user by design.
+````
+
+## Support
+
+If you need help, post in [#devcontainer-community](https://moj.enterprise.slack.com/archives/C06DZ4F04JZ) or leave feedback in [#ask-developer-experience](https://moj.enterprise.slack.com/archives/C0AJBK3P5A8).
+
+
+## For reference
+
+- [moj-github-discovery](https://github.com/ministryofjustice/moj-github-discovery/tree/main/.devcontainer)
+- [Octo Access](https://github.com/ministryofjustice/octo-access/tree/main/.devcontainer)
+- [modernisation-platform-environments](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/.devcontainer)
+- [ministry-of-justice/.devcontainer](https://github.com/ministryofjustice/.devcontainer)
+    
