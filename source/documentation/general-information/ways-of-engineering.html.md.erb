@@ -1,7 +1,7 @@
 ---
 owner_slack: "#developer-experience-alerts"
 title: Our Ways of Engineering
-last_reviewed_on: 2026-07-01
+last_reviewed_on: 2026-09-03
 review_in: 6 months
 ---
 
@@ -121,6 +121,63 @@ Python is a high-level general purpose programming language. Any new work should
 ### ✅ Engineering Tooling
 
 - Dependabot: automated dependency updates and security maintenance
+
+### ✅ Our Dependency Management Strategy
+
+We use Dependabot as our default tool for dependency management, and configure it to minimise operational burden while keeping dependencies visible and up to date. 
+
+Our Dependabot configuration should align with the following principles:
+
+- Automate as much of dependency management as possible.
+- Minimise operational burden, for example by updating minor/patch versions on a quarterly cadence rather than weekly, using `schedule.interval: monthly`.
+- Group dependencies into a single PR (for example, group minor and patch versions together per ecosystem) to reduce PR noise.
+- Use structured package managers Dependabot supports natively, rather than tracking dependencies via ad-hoc or bash-based scripts, so updates remain visible.
+- Use a minimum release window (`cooldown`), so Dependabot does not propose updates released too recently (for example, within the last two weeks).
+- Keep dependency update work visible on the team board. We have a [workflow](https://ministryofjustice.github.io/developer-experience-documentation/documentation/team-guide/dependabot-pr-tracking.html#dependabot-pr-tracking) that adds Dependabot tickets to the board, running every two weeks ahead of Monday sprint planning to create or refresh a tracking issue per repository for any open Dependabot PRs. Each issue is added to the [👩‍💻 Developer Experience Team](https://github.com/orgs/ministryofjustice/projects/152) board so the work is visible for triage.
+
+An example `dependabot.yml` implementing these principles:
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    cooldown:
+      default-days: 14
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    cooldown:
+      default-days: 14
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    cooldown:
+      default-days: 14
+```
+
+
 
 ## Adding/Adjusting Ways of Engineering
 
