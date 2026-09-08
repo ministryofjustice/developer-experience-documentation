@@ -1,0 +1,34 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: 001 - Dependabot update policy
+last_reviewed_on: 2026-09-08
+review_in: 6 months
+---
+
+# 001 - Dependabot update policy
+Date: 2026-09-08
+
+## Status
+Accepted
+
+## Context
+
+Dependabot updates need to keep dependencies current across the package ecosystems used by our repositories without creating unnecessary pull request noise or proposing releases before they have had time to mature. The work also needs to remain visible for team triage and planning.
+
+## Decision
+
+We will configure Dependabot in `.github/dependabot.yml` for each supported package ecosystem used by a repository, following this policy:
+
+- Check configured ecosystems daily.
+- Wait seven days after a release before proposing a routine update using `cooldown.default-days: 7`.
+- Group minor and patch updates into a single pull request per ecosystem.
+- Keep major updates separate so that they receive explicit review.
+- Use scoped commit messages to identify the ecosystem being updated.
+- Track open Dependabot pull requests through the team Dependabot tracking workflow.
+
+## Consequences
+
+- New updates are detected promptly while the seven-day release window reduces the risk of adopting immature releases.
+- Grouping reduces the number of routine pull requests and the associated operational burden.
+- Major updates remain visible as separate changes that can be assessed on their own.
+- Daily checks may still create a backlog of grouped pull requests, so Dependabot work must continue to be reviewed through the team tracking workflow.
