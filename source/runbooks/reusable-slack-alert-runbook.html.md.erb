@@ -31,7 +31,7 @@ jobs:
     ...
   reusable-slack-alert:
     needs: example-job-1
-    uses: ministryofjustice/ministry-of-justice-engineering-platform/.github/workflows/reusable-slack-alert.yml@main
+    uses: ministryofjustice/ministry-of-justice-engineering-platform/.github/workflows/reusable-slack-alert.yml@96de26562471386ca5d20cc77e7dbaf7e7956311
     if: ${{ always() }} # Ensures the Slack alert runs regardless of the previous job's result
     with:
       status: ${{ needs.example-job-1.result }}
