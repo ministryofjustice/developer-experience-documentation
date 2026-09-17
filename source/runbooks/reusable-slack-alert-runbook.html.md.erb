@@ -1,0 +1,41 @@
+---
+owner_slack: "#developer-experience-alerts"
+title: Reusable Slack Alert Workflow Runbook
+last_reviewed_on: 2026-09-17
+review_in: 6 months
+---
+
+# Reusable Slack Alert Workflow Runbook
+## Overview
+
+This runbook provides guidance on adding the reusable Slack alert workflow to an existing workflow
+
+## Inputs
+
+| Input | Description |
+|-------|-------------|
+| `status` | The status of the job that the Slack alert depends on. Typically, this is set to `${{ needs.<job_id>.result }}`. |
+| `workflow-name` | The name of the workflow. Typically, this is set to `${{ github.workflow }}`. |
+
+| Secret | Description |
+|--------|-------------|
+| `slack-webhook-url` | The Slack webhook URL used to send the alert. Typically, this is set to `${{ secrets.SLACK_WEBHOOK_URL }}`. |
+
+## Example Usage
+
+Below is an example with how the reusable Slack alert workflow can be added to an existing workflow.
+
+```yaml
+jobs:
+  example-job-1:
+    ...
+  reusable-slack-alert:
+    needs: example-job-1
+    uses: ministryofjustice/ministry-of-justice-engineering-platform/.github/workflows/reusable-slack-alert.yml@main
+    if: ${{ always() }} # Ensures the Slack alert runs regardless of the previous job's result
+    with:
+      status: ${{ needs.example-job-1.result }}
+      workflow-name: ${{ github.workflow }}
+    secrets:
+      slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
