@@ -1,63 +1,116 @@
 ---
 owner_slack: "#developer-experience-alerts"
-title: GitHub to XSIAM Logging Integration
-last_reviewed_on: 2026-08-06
+title: GitHub Audit Log Shipping to XSIAM
+last_reviewed_on: 2026-09-19
 review_in: 6 months
 ---
 
-# GitHub to XSIAM Logging Integration
+# GitHub Audit Log Shipping to XSIAM
 
 ## Purpose
 
-XSIAM is the MoJs chosen Security Operations Platform, all major platforms are required to enable log ingestion into it, including GitHub.
+GitHub Enterprise audit logs are retained in Amazon S3 and sent to Cortex XSIAM for security monitoring. This runbook explains how the integration works, how to check it, and how to restore the data flow.
 
-This runbook describes the current logging architecture and how to continue to ensure it stays operational.
+The infrastructure is managed in the [`github-audit-log-stream` Terraform component](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/developer-experience/github-audit-log-stream). The implementation is tracked in [engineering platform issue 76](https://github.com/ministryofjustice/ministry-of-justice-engineering-platform/issues/76).
 
 ## Audience
 
-This runbook is primarily for:
+This runbook is for Developer Experience engineers who maintain the AWS and GitHub configuration. The Monitoring and Integration Platform (MIP) team owns the Cortex XSIAM collector.
 
-* **Developer Experience (DevX) engineers**: to ensure the integration stays operable.
+You need the appropriate GitHub Enterprise Owner and Modernisation Platform production account access to complete all of the checks in this runbook.
 
 ## Architecture
 
-The current architecture only depends on a Classic Personal Access Token (PAT), with `read:audit_log` created by an GitHub Enterprise Admin.
+The production data flow is:
 
-This token is used by XSIAMs [GitHub Event Collector](https://xsoar.pan.dev/docs/reference/integrations/github-event-collector) to periodically poll [GitHub Enterprise Audit Logs API](https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/using-the-audit-log-api-for-your-enterprise) for ingestion.
+1. GitHub Enterprise streams audit log objects to the `mojdevx-production-github-audit-log-stream` S3 bucket using GitHub's OpenID Connect (OIDC) identity provider.
+2. An `s3:ObjectCreated` event sends a message to the `github-audit-log-stream-cortex-xsiam` Amazon Simple Queue Service (SQS) queue.
+3. Cortex XSIAM uses workload identity federation to assume the `github-audit-log-stream-cortex-xsiam` AWS Identity and Access Management (IAM) role.
+4. Cortex reads the SQS message, retrieves and decrypts the referenced S3 object, then deletes the processed message.
+5. A message moves to the encrypted dead-letter queue after five unsuccessful receives. Messages in both queues are retained for 14 days.
 
-Since the integration queries the Enterprise Audit Logs, this means all GitHub events and git events from all organisaitons are ingested into XSIAM via this one integration.
+S3 objects are encrypted with an AWS Key Management Service (KMS) customer-managed key and versioning is enabled. Objects move to Standard-Infrequent Access after 90 days, move to Glacier Instant Retrieval after 395 days, and are deleted after 730 days. The same lifecycle applies to non-current versions.
 
-## How to Rotate the Enterprise Classic PAT Token
+This integration covers audit events from all organisations in the `ministry-of-justice-uk` GitHub Enterprise account. It does not use a GitHub personal access token.
 
-To follow this section of the runbook, you must be a GitHub Enterprise Owner.
+## Monitor the Integration
 
-1. Go to <https://github.com/settings/tokens/new>
-2. Give the token as sensible name such as `moj-github-to-xsiam-logging-integration`
-3. **Important:** only give the token the `read:audit_log` scope - no other permissions are required.
-4. **Important:** Ensure the token expiration date is no longer than 90 days in the future.
-5. Store the GitHub PAT in 1Password as a secure note (this will be important for sharing the token later).
-6. Email <monitoring-and-integration-platform@justice.gov.uk> letting them know that the GitHub Token that supports the GitHub Log Ingestion into XSIAM is about to expire and you have a new token for them.
-7. Once you get a response from a team member, go to your 1Password Secure Note and share it with the team members email and send them the link
-8. The Monitoring and Integration Platform team member should confirm the new token is working as expected.
+The MIP team has an alert when GitHub audit log data has not reached Cortex XSIAM for more than three hours.
 
-## Questions / Limitations
+Use AWS CloudWatch metrics to check each stage of the integration:
 
-### Why Not Use a Fine-Grained PAT?
+* Confirm that new objects are arriving in the S3 bucket.
+* Confirm that the main SQS queue's `NumberOfMessagesSent`, `NumberOfMessagesReceived`, and `NumberOfMessagesDeleted` metrics increase as new audit logs arrive.
+* Check `ApproximateNumberOfMessagesVisible` for a growing backlog.
+* Check `ApproximateNumberOfMessagesNotVisible` for messages that are repeatedly being received but not deleted.
+* Confirm that the dead-letter queue's `ApproximateNumberOfMessagesVisible` remains at zero.
 
-This process was initially attempted with a fine-grained PAT. Through testing, we found it could not read the enterprise audit logs as expected. This may be worth retesting at a later date.
+`NumberOfEmptyReceives` can increase after Cortex drains the queue. This is expected and does not indicate a fault by itself.
 
-### Why Not Use a GitHub App?
+## Investigate an Alert or Missing Logs
 
-As specified in the [XSIAM GitHub Event Collector Docs](https://xsoar.pan.dev/docs/reference/integrations/github-event-collector), and what we discovered while testing, the XSIAM does not support the use of GitHub apps and requires a long-lived token.
+Check the delivery path in order so that you can identify which team owns the fault.
 
-### Why not give the MIP Team Access to Generate Their Own Tokens?
+### 1. Check GitHub to S3 Delivery
 
-In GitHub, you can have custom roles at the enterprise level. There is an enterprise-auditor team with the permissions to read the audit logs, although, through testing this, the generated token still did not seem to have the relevant permissions. This is worth testing again.
+1. Open the production S3 bucket and check the timestamp of the latest audit log object.
+2. If no recent objects exist, check the audit log streaming status in the `ministry-of-justice-uk` GitHub Enterprise settings.
+3. Confirm that the configured bucket and IAM role match the Terraform-managed production resources.
+4. Review recent Terraform changes and failed deployment workflows for the `github-audit-log-stream` component.
 
-The only other option would be to make the MIP team Enterprise Admins which is far to much privilege for this use case.
+Do not reconfigure or remove the GitHub stream until you have captured its current settings and checked for an active incident.
 
-### Why Not Stream The Logs to an S3 Bucket?
+### 2. Check S3 to SQS Delivery
 
-GitHub ahas the ability to stream the logs into an S3 bucket, using OIDC for authentication rather than long-lived credentials. We could then setup a trust boundary with XSIAM so they can ingest the logs without having to store any long-lived credentials.
+If S3 objects are current but `NumberOfMessagesSent` is not increasing:
 
-This method would require some additional infrastructure and something to look into later down the line.
+1. Check that the bucket has an `s3:ObjectCreated:*` notification for the Cortex XSIAM queue.
+2. Check the SQS queue policy allows the S3 service to send messages from the audit log bucket and production AWS account.
+3. Check the KMS key policy allows S3 to generate data keys and decrypt queue notifications.
+4. Restore missing configuration through Terraform. Do not make a permanent manual infrastructure change in the AWS console.
+
+### 3. Check XSIAM Consumption
+
+If messages are visible on the main queue but are not being received or deleted:
+
+1. Check whether the MIP team has reported a Cortex collector incident or configuration change.
+2. Confirm that the `github-audit-log-stream/cortex-xsiam-workload-identity` secret exists in AWS Secrets Manager and contains non-placeholder `issuer_url`, `audience`, and `service_account` values. Do not share these values in Slack, tickets, or logs.
+3. Confirm that the Cortex IAM role trust policy uses the expected Google federated principal, audience, and service account subject.
+4. Confirm that the role can receive and delete SQS messages, list the bucket, retrieve objects, and decrypt them with KMS.
+5. Contact the MIP team at <monitoring-and-integration-platform@justice.gov.uk> and provide the incident time, queue URL, IAM role ARN, and relevant metric behaviour. Do not send secret values.
+
+### 4. Check the Dead-letter Queue
+
+If the dead-letter queue contains messages:
+
+1. Record when the count started increasing and correlate it with the main queue and S3 metrics.
+2. Ask the MIP team to check the Cortex collector errors for the same period.
+3. Resolve the identity, permission, decryption, or object-processing error before redriving messages.
+4. Redrive the messages to the main queue and confirm that `NumberOfMessagesDeleted` increases and both queue backlogs return to zero.
+
+Do not delete messages from either queue as a troubleshooting step. Queue messages expire after 14 days, so escalate promptly when the dead-letter queue is not empty.
+
+## Update the Cortex Workload Identity
+
+The workload identity values are stored in the production Secrets Manager secret named `github-audit-log-stream/cortex-xsiam-workload-identity`. Terraform creates the secret but deliberately ignores changes to its value.
+
+When MIP changes the Cortex identity:
+
+1. Obtain the new issuer URL, audience, and service account identifier from the MIP team through an approved secure channel.
+2. Update the existing secret value, preserving the JSON keys `issuer_url`, `audience`, and `service_account`.
+3. Run the Terraform plan and apply workflow for the production `github-audit-log-stream` component. The identity values determine whether the Cortex resources and trust policy are created.
+4. Give MIP the resulting Cortex IAM role ARN and SQS queue URL through an approved channel.
+5. Ask MIP to test the connection and confirm that new messages are received and deleted.
+6. Check that no messages remain in the dead-letter queue.
+
+## Change the Infrastructure
+
+Make all infrastructure changes in the [`modernisation-platform-environments` repository](https://github.com/ministryofjustice/modernisation-platform-environments/tree/main/terraform/environments/developer-experience/github-audit-log-stream) and use its pull request plan and deployment process. Keep the following controls in place:
+
+* least-privilege permissions for GitHub, S3, SQS, KMS, and Cortex
+* encryption for the bucket, queues, dead-letter queue, secret, and Terraform state
+* S3 versioning and the documented 730-day retention policy
+* workload identity conditions for both the audience and service account subject
+* a redrive policy for messages Cortex cannot process
+
+After deployment, generate a GitHub audit event and confirm the new S3 object, SQS message delivery, Cortex receipt and deletion, and an empty dead-letter queue.
