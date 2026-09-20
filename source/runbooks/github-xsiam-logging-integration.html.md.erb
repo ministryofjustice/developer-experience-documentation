@@ -77,7 +77,7 @@ If messages are visible on the main queue but are not being received or deleted:
 2. Confirm that the `github-audit-log-stream/cortex-xsiam-workload-identity` secret exists in AWS Secrets Manager and contains non-placeholder `issuer_url`, `audience`, and `service_account` values. Do not share these values in Slack, tickets, or logs.
 3. Confirm that the Cortex IAM role trust policy uses the expected Google federated principal, audience, and service account subject.
 4. Confirm that the role can receive and delete SQS messages, list the bucket, retrieve objects, and decrypt them with KMS.
-5. Contact the MIP team at <monitoring-and-integration-platform@justice.gov.uk> and provide the incident time, queue URL, IAM role ARN, and relevant metric behaviour. Do not send secret values.
+5. Contact the MIP team using the [Monitoring and Response page](https://justiceuk.sharepoint.com/sites/knowthething/SitePages/MonitoringandResponse.aspx) and provide the incident time, queue URL, IAM role ARN, and relevant metric behaviour. Do not send secret values.
 
 ### 4. Check the Dead-letter Queue
 
