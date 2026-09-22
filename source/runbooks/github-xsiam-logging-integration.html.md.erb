@@ -100,7 +100,7 @@ When MIP changes the Cortex identity:
 
 1. Obtain the new issuer URL, audience, and service account identifier from the MIP team through an approved secure channel.
 2. Update the existing secret value, preserving the JSON keys `issuer_url`, `audience`, and `service_account`.
-3. Run the Terraform plan and apply workflow for the production `github-audit-log-stream` component. The identity values determine whether the Cortex resources and trust policy are created.
+3. Run the [Terraform plan and apply workflow](https://github.com/ministryofjustice/modernisation-platform-environments/actions/workflows/developer-experience.yml) for the production `github-audit-log-stream` component. The identity values determine whether the Cortex resources and trust policy are created.
 4. Give MIP the resulting Cortex IAM role ARN and SQS queue URL through an approved channel.
 5. Ask MIP to test the connection and confirm that new messages are received and deleted.
 6. Check that no messages remain in the dead-letter queue.
